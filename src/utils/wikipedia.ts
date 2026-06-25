@@ -71,6 +71,17 @@ function actionBase(lang: string) {
   return `https://${lang}.wikipedia.org/w/api.php?format=json&origin=*`;
 }
 
+async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const PROPS = '&prop=pageimages|extracts|info&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=1200&inprop=url';
 
 function processPages(pages: Record<string, any>, lang: string): WikiArticle[] {
@@ -88,7 +99,7 @@ function processPages(pages: Record<string, any>, lang: string): WikiArticle[] {
 // ─── Public API ─────────────────────────────────────────────────────────────
 export async function fetchRandomArticles(lang = 'hr'): Promise<WikiArticle[]> {
   const url = actionBase(lang) + '&action=query&generator=random&grnnamespace=0&grnlimit=20' + PROPS;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
   const data = await res.json();
   return processPages(data?.query?.pages ?? {}, lang);
@@ -99,7 +110,7 @@ export async function fetchByCategory(category: string, lang = 'hr'): Promise<Wi
     actionBase(lang) +
     `&action=query&generator=categorymembers&gcmtitle=${encodeURIComponent(category)}&gcmlimit=20&gcmtype=page` +
     PROPS;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
   const data = await res.json();
   return processPages(data?.query?.pages ?? {}, lang);
@@ -111,7 +122,7 @@ export async function searchArticles(query: string, lang = 'hr'): Promise<WikiAr
     actionBase(lang) +
     `&action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=15` +
     PROPS;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
   const data = await res.json();
   return processPages(data?.query?.pages ?? {}, lang);
@@ -119,7 +130,7 @@ export async function searchArticles(query: string, lang = 'hr'): Promise<WikiAr
 
 export async function fetchFullArticle(title: string, lang = 'hr'): Promise<string> {
   const url = actionBase(lang) + `&action=query&titles=${encodeURIComponent(title)}&prop=extracts&explaintext=1`;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
   const data = await res.json();
   const page: any = Object.values(data?.query?.pages ?? {})[0];
@@ -135,7 +146,7 @@ export async function fetchDailyHighlight(lang = 'hr'): Promise<WikiArticle | nu
   const langs = lang === 'hr' ? ['hr', 'en'] : [lang, 'en'];
   for (const l of langs) {
     try {
-      const res = await fetch(`https://${l}.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${d}`);
+      const res = await fetchWithTimeout(`https://${l}.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${d}`);
       if (!res.ok) continue;
       const data = await res.json();
       const tfa = data?.tfa;
@@ -164,7 +175,7 @@ export async function fetchOnThisDay(lang = 'hr'): Promise<WikiArticle | null> {
 
   for (const l of candidates) {
     try {
-      const res = await fetch(`https://${l}.wikipedia.org/api/rest_v1/feed/onthisday/selected/${m}/${d}`);
+      const res = await fetchWithTimeout(`https://${l}.wikipedia.org/api/rest_v1/feed/onthisday/selected/${m}/${d}`);
       if (!res.ok) continue;
       const data = await res.json();
       const events: any[] = data?.selected ?? [];
@@ -189,7 +200,7 @@ export async function fetchOnThisDay(lang = 'hr'): Promise<WikiArticle | null> {
 
 export async function fetchRelatedArticles(title: string, lang = 'hr'): Promise<WikiArticle[]> {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://${lang}.wikipedia.org/api/rest_v1/page/related/${encodeURIComponent(title)}`
     );
     if (!res.ok) throw new Error('related failed');
