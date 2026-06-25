@@ -149,7 +149,7 @@ export default function OnboardingScreen({ onDone }: Props) {
       </View>
 
       {/* Buttons */}
-      <View style={[styles.buttons, { paddingBottom: Platform.OS === 'ios' ? 50 : 30 }]}>
+      <View style={[styles.buttons, { paddingBottom: Platform.OS === 'ios' ? 110 : 30 }]}>
         <TouchableOpacity
           onPress={goNext}
           style={[styles.primaryBtn, { backgroundColor: accent }]}
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   accentBar: { width: 36, height: 3, borderRadius: 2 },
   dots: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 160 : 140,
+    bottom: Platform.OS === 'ios' ? 220 : 140,
     left: 0,
     right: 0,
     flexDirection: 'row',
