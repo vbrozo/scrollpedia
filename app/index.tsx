@@ -243,7 +243,7 @@ export default function DiscoverScreen() {
           decelerationRate="fast"
           showsVerticalScrollIndicator={false}
           onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={2}
           ListFooterComponent={renderFooter}
           style={{ height: H }}
           windowSize={3}
