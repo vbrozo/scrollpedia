@@ -26,7 +26,10 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Scrollpedia",
+      "themeColor": "#0a0a0a",
+      "backgroundColor": "#0a0a0a"
     },
     "plugins": [
       "expo-router",
