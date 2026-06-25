@@ -17,6 +17,10 @@ TikTok-style infinite vertical scroll app that shows random Croatian Wikipedia a
 - **Share** — native share sheet with article URL
 - **Open** — open article in system browser
 
+### UX / Onboarding
+- **Onboarding** — 4 animated full-screen slides at first launch; horizontal swipe with spring dots; color-themed per slide (blue/green/red/gold); skip or tap "Dalje"; stored in AsyncStorage, never shown again
+- **Skeleton loading** — shimmer placeholder cards (4x) shown while initial feed loads; matches exact ArticleCard layout with animated opacity pulse; replaces spinner entirely
+
 ### Discovery
 - **Search tab** — debounced full-text search of Croatian Wikipedia; tap result opens read-more modal
 
@@ -48,9 +52,7 @@ cp -r dist docs          # GitHub Pages serves from /docs
 - **Dijeljenje kartice kao slika** — Umjesto linka, generiraj screenshot kartice kao Instagram story (expo-view-shot)
 
 ### UX / Polish
-- **Onboarding** — 3 swipe ekrana koji objasne geste i koncepte pri prvom pokretanju
 - **Haptic feedback** — Vibracija pri saveanju i swipeu (expo-haptics, samo native)
-- **Skeleton loading** — Placeholder kartice umjesto spinnera dok se učitava sadržaj
 - **Pinch-to-zoom** — Zoom na sliku članka
 
 ### Content

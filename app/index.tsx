@@ -13,12 +13,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useArticles } from '../src/hooks/useArticles';
 import ArticleCard from '../src/components/ArticleCard';
 import DailyHighlightCard from '../src/components/DailyHighlightCard';
+import SkeletonCard from '../src/components/SkeletonCard';
+import OnboardingScreen from '../src/components/OnboardingScreen';
 import CategoryFilter from '../src/components/CategoryFilter';
 import ArticleModal from '../src/components/ArticleModal';
 import { WikiArticle } from '../src/types';
 import { fetchDailyHighlight } from '../src/utils/wikipedia';
 
 const HIGHLIGHT_CACHE_KEY = 'scrollpedia_daily_highlight';
+const ONBOARDING_KEY = 'scrollpedia_onboarding_done';
+const SKELETON_COUNT = 4;
 
 function todayCacheKey() {
   const d = new Date();
@@ -30,6 +34,8 @@ export default function DiscoverScreen() {
   const [category, setCategory] = useState<string | null>(null);
   const [modalArticle, setModalArticle] = useState<WikiArticle | null>(null);
   const [highlight, setHighlight] = useState<WikiArticle | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
   const { articles, loading, error, loadMore, reset } = useArticles(category);
   const flatListRef = useRef<FlatList<WikiArticle>>(null);
   const currentIndexRef = useRef(0);
@@ -42,16 +48,27 @@ export default function DiscoverScreen() {
     }
   }, []);
 
-  // Fetch daily highlight once, cache by date
+  // Check onboarding + fetch highlight in parallel
   useEffect(() => {
-    async function loadHighlight() {
+    async function init() {
+      const [onboardingDone, cachedHighlight] = await Promise.all([
+        AsyncStorage.getItem(ONBOARDING_KEY),
+        AsyncStorage.getItem(HIGHLIGHT_CACHE_KEY),
+      ]);
+
+      setShowOnboarding(!onboardingDone);
+      setOnboardingChecked(true);
+
+      // Highlight: try cache first
       const todayKey = todayCacheKey();
-      try {
-        const cached = await AsyncStorage.getItem(HIGHLIGHT_CACHE_KEY);
-        if (cached) {
-          const { key, article } = JSON.parse(cached);
-          if (key === todayKey) { setHighlight(article); return; }
+      if (cachedHighlight) {
+        const { key, article } = JSON.parse(cachedHighlight);
+        if (key === todayKey) {
+          setHighlight(article);
+          return;
         }
+      }
+      try {
         const article = await fetchDailyHighlight();
         if (article) {
           setHighlight(article);
@@ -59,7 +76,7 @@ export default function DiscoverScreen() {
         }
       } catch {}
     }
-    loadHighlight();
+    init();
   }, []);
 
   // Initial article load
@@ -69,6 +86,11 @@ export default function DiscoverScreen() {
       loadMore();
     }
   }, []);
+
+  async function handleOnboardingDone() {
+    await AsyncStorage.setItem(ONBOARDING_KEY, '1');
+    setShowOnboarding(false);
+  }
 
   const handleCategoryChange = useCallback(
     (value: string | null) => {
@@ -95,19 +117,17 @@ export default function DiscoverScreen() {
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
 
-  // Prepend highlight only when showing "Sve" (no category filter)
-  const feedData: WikiArticle[] = category === null && highlight
-    ? [highlight, ...articles.filter((a) => a.pageid !== highlight.pageid)]
-    : articles;
+  const feedData: WikiArticle[] =
+    category === null && highlight
+      ? [highlight, ...articles.filter((a) => a.pageid !== highlight.pageid)]
+      : articles;
+
+  // Show skeletons while initial load is happening
+  const showSkeletons = loading && feedData.length === 0;
 
   function renderItem({ item }: { item: WikiArticle }) {
     if (item.isHighlight) {
-      return (
-        <DailyHighlightCard
-          article={item}
-          onReadMore={() => setModalArticle(item)}
-        />
-      );
+      return <DailyHighlightCard article={item} onReadMore={() => setModalArticle(item)} />;
     }
     return (
       <ArticleCard
@@ -119,7 +139,7 @@ export default function DiscoverScreen() {
   }
 
   function renderFooter() {
-    if (!loading) return null;
+    if (!loading || feedData.length === 0) return null;
     return (
       <View style={[styles.loader, { height: H }]}>
         <ActivityIndicator color="#fff" size="large" />
@@ -139,42 +159,53 @@ export default function DiscoverScreen() {
     );
   }
 
-  if (feedData.length === 0 && loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#fff" size="large" />
-        <Text style={styles.loadingText}>Učitavanje članaka…</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <FlatList
-        ref={flatListRef}
-        data={feedData}
-        renderItem={renderItem}
-        keyExtractor={(item) => `${item.isHighlight ? 'h' : ''}${item.pageid}`}
-        pagingEnabled
-        snapToInterval={H}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        showsVerticalScrollIndicator={false}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
-        style={{ height: H }}
-        windowSize={3}
-        initialNumToRender={2}
-        maxToRenderPerBatch={3}
-        getItemLayout={(_, index) => ({ length: H, offset: H * index, index })}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig.current}
-      />
+      {showSkeletons ? (
+        // Skeleton feed during initial load
+        <FlatList
+          data={Array.from({ length: SKELETON_COUNT }, (_, i) => i)}
+          keyExtractor={(i) => `skel-${i}`}
+          renderItem={() => <SkeletonCard />}
+          pagingEnabled
+          snapToInterval={H}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          style={{ height: H }}
+          getItemLayout={(_, index) => ({ length: H, offset: H * index, index })}
+        />
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={feedData}
+          renderItem={renderItem}
+          keyExtractor={(item) => `${item.isHighlight ? 'h' : ''}${item.pageid}`}
+          pagingEnabled
+          snapToInterval={H}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          showsVerticalScrollIndicator={false}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          style={{ height: H }}
+          windowSize={3}
+          initialNumToRender={2}
+          maxToRenderPerBatch={3}
+          getItemLayout={(_, index) => ({ length: H, offset: H * index, index })}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig.current}
+        />
+      )}
 
       <CategoryFilter selected={category} onSelect={handleCategoryChange} />
-
       <ArticleModal article={modalArticle} onClose={() => setModalArticle(null)} />
+
+      {onboardingChecked && showOnboarding && (
+        <OnboardingScreen onDone={handleOnboardingDone} />
+      )}
     </View>
   );
 }
@@ -189,7 +220,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   loader: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0a' },
-  loadingText: { color: 'rgba(255,255,255,0.5)', fontSize: 14, marginTop: 12 },
   errorEmoji: { fontSize: 40 },
   errorText: {
     color: 'rgba(255,255,255,0.6)',
