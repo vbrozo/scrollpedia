@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import {
+  Image,
   Linking,
   Platform,
   Share,
@@ -40,6 +41,9 @@ function DailyHighlightCard({ article, width: W, height: H, onReadMore }: Props)
     <View style={[styles.card, { width: W, height: H }]}>
       {/* Ghost globe - golden accent */}
       <View style={[styles.globe, { width: globeSize, height: globeSize, borderRadius: globeSize / 2, top: globeTop, left: globeLeft }]}>
+        {article.thumbnail?.source && (
+          <Image source={{ uri: article.thumbnail.source }} style={[styles.globeImage, { borderRadius: globeSize / 2 }]} resizeMode="cover" />
+        )}
         <View style={[styles.meridian, { left: meridian1Left, right: meridian1Left }]} />
         <View style={[styles.meridian, { left: meridian2Left, right: meridian2Left, borderColor: 'rgba(240,189,24,0.05)' }]} />
         <View style={[styles.latitude, { top: '38%' }]} />
@@ -90,7 +94,8 @@ function ActionButton({ emoji, label, onPress, active }: { emoji: string; label:
 
 const styles = StyleSheet.create({
   card: { backgroundColor: '#0d1128', overflow: 'hidden' },
-  globe: { position: 'absolute', borderWidth: 1, borderColor: 'rgba(240,189,24,0.11)' },
+  globe: { position: 'absolute', borderWidth: 1, borderColor: 'rgba(240,189,24,0.11)', overflow: 'hidden' },
+  globeImage: { position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.28 } as any,
   meridian: { position: 'absolute', top: 0, bottom: 0, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(240,189,24,0.08)' },
   latitude: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: 'rgba(240,189,24,0.07)' },
   content: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 22 },
