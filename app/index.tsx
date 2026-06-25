@@ -179,6 +179,17 @@ export default function DiscoverScreen() {
   }
 
   function renderFooter() {
+    if (error && feedData.length > 0) {
+      return (
+        <View style={[styles.loader, { height: H }]}>
+          <Text style={styles.errorEmoji}>⚠️</Text>
+          <Text style={styles.errorText}>Greška pri učitavanju</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={loadMore}>
+            <Text style={styles.retryText}>Pokušaj ponovo</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
     if (!loading || feedData.length === 0) return null;
     return (
       <View style={[styles.loader, { height: H }]}>

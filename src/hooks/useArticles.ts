@@ -30,6 +30,8 @@ export function useArticles(category: string | null = null, lang = 'hr') {
   }, [category, lang]);
 
   const reset = useCallback(() => {
+    loadingRef.current = false;
+    setLoading(false);
     setArticles([]);
     setError(null);
   }, []);
