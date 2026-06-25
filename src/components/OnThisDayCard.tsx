@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   Linking,
   Platform,
@@ -7,7 +7,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { WikiArticle } from '../types';
 import { useSaved } from '../context/SavedContext';
@@ -16,6 +15,8 @@ import { getStrings } from '../utils/i18n';
 
 interface Props {
   article: WikiArticle;
+  width: number;
+  height: number;
   onReadMore?: () => void;
 }
 
@@ -36,23 +37,26 @@ function todayFormatted(lang: string) {
 
 const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
 
-export default function OnThisDayCard({ article, onReadMore }: Props) {
-  const { width: W, height: H } = useWindowDimensions();
+function OnThisDayCard({ article, width: W, height: H, onReadMore }: Props) {
   const { lang } = useLanguage();
   const t = getStrings(lang);
   const { isSaved, toggle } = useSaved();
   const saved = isSaved(article);
   const isWeb = Platform.OS === 'web';
   const globeSize = Math.min(W, H) * 0.62;
+  const globeLeft = (W - globeSize) / 2;
+  const globeTop = H * 0.1;
+  const meridian1Left = globeSize * 0.25;
+  const meridian2Left = globeSize * 0.415;
 
   const truncated = article.extract.length > 220 ? article.extract.slice(0, 217) + '…' : article.extract;
 
   return (
     <View style={[styles.card, { width: W, height: H }]}>
       {/* Ghost globe - magenta accent */}
-      <View style={[styles.globe, { width: globeSize, height: globeSize, borderRadius: globeSize / 2, top: H * 0.1, left: (W - globeSize) / 2 }]}>
-        <View style={[styles.meridian, { left: globeSize * 0.25, right: globeSize * 0.25 }]} />
-        <View style={[styles.meridian, { left: globeSize * 0.415, right: globeSize * 0.415, borderColor: 'rgba(224,64,204,0.05)' }]} />
+      <View style={[styles.globe, { width: globeSize, height: globeSize, borderRadius: globeSize / 2, top: globeTop, left: globeLeft }]}>
+        <View style={[styles.meridian, { left: meridian1Left, right: meridian1Left }]} />
+        <View style={[styles.meridian, { left: meridian2Left, right: meridian2Left, borderColor: 'rgba(224,64,204,0.05)' }]} />
         <View style={[styles.latitude, { top: '38%' }]} />
         <View style={[styles.latitude, { top: '62%' }]} />
       </View>
@@ -101,6 +105,8 @@ export default function OnThisDayCard({ article, onReadMore }: Props) {
     </View>
   );
 }
+
+export default memo(OnThisDayCard);
 
 function ActionButton({ emoji, label, onPress, active }: { emoji: string; label: string; onPress: () => void; active?: boolean }) {
   return (

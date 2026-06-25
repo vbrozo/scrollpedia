@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -33,7 +33,7 @@ function todayCacheKey(lang: string) {
 }
 
 export default function DiscoverScreen() {
-  const { height: H } = useWindowDimensions();
+  const { width: W, height: H } = useWindowDimensions();
   const { lang } = useLanguage();
   const [category, setCategory] = useState<string | null>(null);
   const [modalArticle, setModalArticle] = useState<WikiArticle | null>(null);
@@ -148,17 +148,17 @@ export default function DiscoverScreen() {
   }
 
   // Build feed: highlight → onthisday → regular articles (deduplicated)
-  const specialIds = new Set([highlight?.pageid, onThisDay?.pageid].filter(Boolean) as number[]);
-  const regularArticles = articles.filter((a) => !specialIds.has(a.pageid));
-
-  const feedData: WikiArticle[] =
-    category === null
+  const feedData = useMemo<WikiArticle[]>(() => {
+    const specialIds = new Set([highlight?.pageid, onThisDay?.pageid].filter(Boolean) as number[]);
+    const regularArticles = articles.filter((a) => !specialIds.has(a.pageid));
+    return category === null
       ? [
           ...(highlight ? [highlight] : []),
           ...(onThisDay ? [onThisDay] : []),
           ...regularArticles,
         ]
       : regularArticles;
+  }, [highlight, onThisDay, articles, category]);
 
   useEffect(() => {
     feedLengthRef.current = feedData.length;
@@ -169,17 +169,17 @@ export default function DiscoverScreen() {
   // shell mounting (HTML splash removed) and the first data/onboarding appearing.
   const showSkeletons = feedData.length === 0 && !error;
 
-  function renderItem({ item, index }: { item: WikiArticle; index: number }) {
+  const renderItem = useCallback(({ item, index }: { item: WikiArticle; index: number }) => {
     if (item.isHighlight) {
-      return <DailyHighlightCard article={item} onReadMore={() => setModalArticle(item)} />;
+      return <DailyHighlightCard article={item} width={W} height={H} onReadMore={() => setModalArticle(item)} />;
     }
     if (item.isOnThisDay) {
-      return <OnThisDayCard article={item} onReadMore={() => setModalArticle(item)} />;
+      return <OnThisDayCard article={item} width={W} height={H} onReadMore={() => setModalArticle(item)} />;
     }
     return (
-      <ArticleCard article={item} index={index} total={feedData.length} onSkip={handleSkip} onReadMore={() => setModalArticle(item)} />
+      <ArticleCard article={item} index={index} total={feedData.length} width={W} height={H} onSkip={handleSkip} onReadMore={() => setModalArticle(item)} />
     );
-  }
+  }, [W, H, feedData.length, handleSkip]);
 
   function renderFooter() {
     if (feedData.length === 0) return null;

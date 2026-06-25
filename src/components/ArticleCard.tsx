@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { memo, useRef, useState } from 'react';
 import {
   Animated,
   Linking,
@@ -9,7 +9,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { WikiArticle } from '../types';
 import { useSaved } from '../context/SavedContext';
@@ -20,14 +19,16 @@ interface Props {
   article: WikiArticle;
   index?: number;
   total?: number;
+  width: number;
+  height: number;
   onSkip?: () => void;
   onReadMore?: () => void;
 }
 
 const ACCENTS = [
-  { color: '#5e7fff', bg: 'rgba(94,127,255,0.18)', border: 'rgba(94,127,255,0.32)', globe: 'rgba(94,127,255,0.11)' },
-  { color: '#a45eff', bg: 'rgba(164,94,255,0.18)',  border: 'rgba(164,94,255,0.32)',  globe: 'rgba(164,94,255,0.11)' },
-  { color: '#e040cc', bg: 'rgba(224,64,204,0.18)',  border: 'rgba(224,64,204,0.32)',  globe: 'rgba(224,64,204,0.11)' },
+  { color: '#5e7fff', bg: 'rgba(94,127,255,0.18)', border: 'rgba(94,127,255,0.32)', globe: 'rgba(94,127,255,0.11)', meridian1: 'rgba(94,127,255,0.08)', meridian2: 'rgba(94,127,255,0.05)', latitude: 'rgba(94,127,255,0.07)' },
+  { color: '#a45eff', bg: 'rgba(164,94,255,0.18)',  border: 'rgba(164,94,255,0.32)',  globe: 'rgba(164,94,255,0.11)', meridian1: 'rgba(164,94,255,0.08)', meridian2: 'rgba(164,94,255,0.05)', latitude: 'rgba(164,94,255,0.07)' },
+  { color: '#e040cc', bg: 'rgba(224,64,204,0.18)',  border: 'rgba(224,64,204,0.32)',  globe: 'rgba(224,64,204,0.11)', meridian1: 'rgba(224,64,204,0.08)', meridian2: 'rgba(224,64,204,0.05)', latitude: 'rgba(224,64,204,0.07)' },
 ];
 
 const DOT_SETS = [
@@ -39,8 +40,7 @@ const DOT_SETS = [
 const SWIPE_THRESHOLD = 80;
 const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
 
-export default function ArticleCard({ article, index = 0, total = 0, onSkip, onReadMore }: Props) {
-  const { width: W, height: H } = useWindowDimensions();
+function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSkip, onReadMore }: Props) {
   const { lang } = useLanguage();
   const t = getStrings(lang);
   const { isSaved, save, toggle } = useSaved();
@@ -56,6 +56,10 @@ export default function ArticleCard({ article, index = 0, total = 0, onSkip, onR
   const dots = DOT_SETS[index % 3];
   const isWeb = Platform.OS === 'web';
   const globeSize = Math.min(W, H) * 0.62;
+  const globeLeft = (W - globeSize) / 2;
+  const globeTop = H * 0.1;
+  const meridian1Left = globeSize * 0.25;
+  const meridian2Left = globeSize * 0.415;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -94,11 +98,11 @@ export default function ArticleCard({ article, index = 0, total = 0, onSkip, onR
       {...(isWeb ? {} : panResponder.panHandlers)}
     >
       {/* Ghost globe */}
-      <View style={[styles.globe, { width: globeSize, height: globeSize, borderRadius: globeSize / 2, top: H * 0.1, left: (W - globeSize) / 2, borderColor: accent.globe }]}>
-        <View style={[styles.meridian, { left: globeSize * 0.25, right: globeSize * 0.25, borderColor: accent.globe.replace('0.11', '0.08') }]} />
-        <View style={[styles.meridian, { left: globeSize * 0.415, right: globeSize * 0.415, borderColor: accent.globe.replace('0.11', '0.05') }]} />
-        <View style={[styles.latitude, { top: '38%', backgroundColor: accent.globe.replace('0.11', '0.07') }]} />
-        <View style={[styles.latitude, { top: '62%', backgroundColor: accent.globe.replace('0.11', '0.07') }]} />
+      <View style={[styles.globe, { width: globeSize, height: globeSize, borderRadius: globeSize / 2, top: globeTop, left: globeLeft, borderColor: accent.globe }]}>
+        <View style={[styles.meridian, { left: meridian1Left, right: meridian1Left, borderColor: accent.meridian1 }]} />
+        <View style={[styles.meridian, { left: meridian2Left, right: meridian2Left, borderColor: accent.meridian2 }]} />
+        <View style={[styles.latitude, { top: '38%', backgroundColor: accent.latitude }]} />
+        <View style={[styles.latitude, { top: '62%', backgroundColor: accent.latitude }]} />
       </View>
 
       {swipeLabel === 'SAVE' && <View style={[styles.swipeOverlay, styles.swipeOverlaySave]}><Text style={styles.swipeOverlayText}>🔖 {t.saveOverlay}</Text></View>}
@@ -139,6 +143,8 @@ export default function ArticleCard({ article, index = 0, total = 0, onSkip, onR
     </Animated.View>
   );
 }
+
+export default memo(ArticleCard);
 
 function ActionButton({ emoji, label, onPress, active }: { emoji: string; label: string; onPress: () => void; active?: boolean }) {
   return (
