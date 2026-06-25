@@ -217,6 +217,7 @@ export default function DiscoverScreen() {
     <View style={styles.container}>
       {showSkeletons ? (
         <FlatList
+          key="skeleton-list"
           data={Array.from({ length: SKELETON_COUNT }, (_, i) => i)}
           keyExtractor={(i) => `skel-${i}`}
           renderItem={() => <SkeletonCard />}
@@ -231,6 +232,7 @@ export default function DiscoverScreen() {
         />
       ) : (
         <FlatList
+          key="feed-list"
           ref={flatListRef}
           data={feedData}
           renderItem={renderItem}
