@@ -56,7 +56,58 @@ export default function Root({ children }: PropsWithChildren) {
           }
         `}</style>
       </head>
-      <body>{children}</body>
+      <body>
+        {/* Native HTML splash — visible immediately before React JS loads */}
+        <div id="html-splash" style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: '#0a0a0a',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '20px',
+        } as any}>
+          {/* Globe SVG inline — no external request needed */}
+          <svg width="96" height="96" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sp" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#4a9eff"/>
+                <stop offset="100%" stopColor="#a855f7"/>
+              </linearGradient>
+            </defs>
+            <rect width="512" height="512" rx="112" fill="#0d1535"/>
+            <circle cx="256" cy="256" r="175" fill="#0a0f28"/>
+            <ellipse cx="256" cy="256" rx="70" ry="175" fill="none" stroke="#4a9eff" strokeWidth="5" opacity="0.3"/>
+            <ellipse cx="256" cy="256" rx="140" ry="175" fill="none" stroke="#4a9eff" strokeWidth="5" opacity="0.2"/>
+            <line x1="81" y1="256" x2="431" y2="256" stroke="#4a9eff" strokeWidth="5" opacity="0.3"/>
+            <line x1="81" y1="175" x2="431" y2="175" stroke="#4a9eff" strokeWidth="4" opacity="0.15"/>
+            <line x1="81" y1="337" x2="431" y2="337" stroke="#4a9eff" strokeWidth="4" opacity="0.15"/>
+            <circle cx="256" cy="256" r="175" fill="none" stroke="#4a9eff" strokeWidth="6" opacity="0.85"/>
+            <text x="256" y="320" fontFamily="Arial Black, Arial" fontWeight="900" fontSize="240" textAnchor="middle" fill="url(#sp)" opacity="0.92">S</text>
+          </svg>
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', letterSpacing: '3px', fontFamily: 'system-ui,sans-serif' }}>
+            SCROLLPEDIA
+          </div>
+        </div>
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Hide splash as soon as React has rendered something
+          document.addEventListener('DOMContentLoaded', function() {
+            var splash = document.getElementById('html-splash');
+            if (!splash) return;
+            // Watch for React root to populate
+            var observer = new MutationObserver(function() {
+              var root = document.getElementById('root');
+              if (root && root.children.length > 0) {
+                splash.style.transition = 'opacity 0.3s';
+                splash.style.opacity = '0';
+                setTimeout(function() { splash.remove(); }, 350);
+                observer.disconnect();
+              }
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+            // Fallback: hide after 8s no matter what
+            setTimeout(function() { splash && splash.remove(); }, 8000);
+          });
+        `}} />
+        {children}
+      </body>
     </html>
   );
 }
