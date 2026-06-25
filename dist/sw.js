@@ -1,73 +1,72 @@
-const CACHE = 'scrollpedia-v3';
-const PRECACHE = [
-  '/scrollpedia/',
-  '/scrollpedia/index.html',
-  '/scrollpedia/search.html',
-  '/scrollpedia/saved.html',
-  '/scrollpedia/settings.html',
-  '/scrollpedia/404.html',
-  '/scrollpedia/manifest.json',
-  '/scrollpedia/icons/icon-192.png',
-  '/scrollpedia/icons/icon-512.png',
-];
+const CACHE = 'scrollpedia-v4';
 
+// Only cache static assets that have content hashes in their names.
+// HTML files are intentionally NOT cached — always fetched fresh so
+// a new deploy never results in a mismatched JS bundle → blank screen.
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then((c) => c.addAll([
+        '/scrollpedia/icons/icon-192.png',
+        '/scrollpedia/icons/icon-512.png',
+        '/scrollpedia/manifest.json',
+      ]))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
-  // Network-first for Wikipedia API (always fresh articles)
+  // Network-only for Wikipedia API (always fresh articles)
   if (url.hostname.includes('wikipedia.org')) {
+    e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
+    return;
+  }
+
+  // Network-first for HTML navigation — ensures fresh shell after deploy
+  if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
+      fetch(e.request).catch(() =>
+        // Offline fallback: serve cached index.html if available
+        caches.match('/scrollpedia/index.html').then((r) => r || new Response('Offline', { status: 503 }))
+      )
     );
     return;
   }
 
-  // For navigation requests (HTML page loads), try network then cache,
-  // falling back to index.html so SPA routing always works
-  if (e.request.mode === 'navigate') {
+  // Cache-first for hashed static assets (_expo/static/..., assets/...)
+  // These are safe to cache forever because filename changes on every deploy
+  if (
+    url.pathname.includes('/_expo/static/') ||
+    url.pathname.includes('/assets/') ||
+    url.pathname.includes('/icons/')
+  ) {
     e.respondWith(
-      fetch(e.request)
-        .then((res) => {
+      caches.match(e.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(e.request).then((res) => {
           if (res.ok) {
             const clone = res.clone();
             caches.open(CACHE).then((c) => c.put(e.request, clone));
           }
           return res;
-        })
-        .catch(() =>
-          caches.match(e.request).then((cached) =>
-            cached || caches.match('/scrollpedia/index.html')
-          )
-        )
+        });
+      })
     );
     return;
   }
 
-  // Cache-first for app shell assets
+  // Everything else: network-first
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(e.request).then((res) => {
-        if (res.ok && e.request.method === 'GET') {
-          const clone = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, clone));
-        }
-        return res;
-      });
-    })
+    fetch(e.request).catch(() => caches.match(e.request).then((r) => r || new Response('', { status: 503 })))
   );
 });
