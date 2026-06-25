@@ -1,21 +1,20 @@
 import React, { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  ViewToken,
+  useWindowDimensions,
 } from 'react-native';
 import { useArticles } from '../src/hooks/useArticles';
 import ArticleCard from '../src/components/ArticleCard';
 import { WikiArticle } from '../src/types';
 
-const { height: H } = Dimensions.get('window');
-
 export default function DiscoverScreen() {
+  const { width: W, height: H } = useWindowDimensions();
   const { articles, loading, error, loadMore } = useArticles();
   const loadedRef = useRef(false);
 
@@ -26,22 +25,21 @@ export default function DiscoverScreen() {
     }
   }, []);
 
-  function handleEndReached() {
-    loadMore();
-  }
+  // Register service worker on web
+  useEffect(() => {
+    if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/scrollpedia/sw.js').catch(() => {});
+    }
+  }, []);
 
   function renderItem({ item }: { item: WikiArticle }) {
     return <ArticleCard article={item} />;
   }
 
-  function keyExtractor(item: WikiArticle) {
-    return String(item.pageid);
-  }
-
   function renderFooter() {
     if (!loading) return null;
     return (
-      <View style={styles.loader}>
+      <View style={[styles.loader, { height: H }]}>
         <ActivityIndicator color="#fff" size="large" />
       </View>
     );
@@ -63,7 +61,7 @@ export default function DiscoverScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator color="#fff" size="large" />
-        <Text style={styles.loadingText}>Loading articles…</Text>
+        <Text style={styles.loadingText}>Učitavanje članaka…</Text>
       </View>
     );
   }
@@ -72,19 +70,20 @@ export default function DiscoverScreen() {
     <FlatList
       data={articles}
       renderItem={renderItem}
-      keyExtractor={keyExtractor}
+      keyExtractor={(item) => String(item.pageid)}
       pagingEnabled
       snapToInterval={H}
       snapToAlignment="start"
       decelerationRate="fast"
       showsVerticalScrollIndicator={false}
-      onEndReached={handleEndReached}
+      onEndReached={loadMore}
       onEndReachedThreshold={0.5}
       ListFooterComponent={renderFooter}
-      style={styles.list}
+      style={[styles.list, { height: H }]}
       windowSize={3}
       initialNumToRender={2}
       maxToRenderPerBatch={3}
+      getItemLayout={(_, index) => ({ length: H, offset: H * index, index })}
     />
   );
 }
@@ -102,7 +101,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   loader: {
-    height: H,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0a0a0a',
@@ -112,9 +110,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 12,
   },
-  errorEmoji: {
-    fontSize: 40,
-  },
+  errorEmoji: { fontSize: 40 },
   errorText: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 14,
@@ -129,9 +125,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
-  retryText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
+  retryText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });
