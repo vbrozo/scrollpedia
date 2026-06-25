@@ -18,15 +18,28 @@ export default function RootLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Discover',
-            tabBarIcon: ({ color }) => <TabIcon emoji="🌍" color={color} />,
+            title: 'Otkrij',
+            tabBarIcon: ({ focused }: { focused: boolean }) => (
+              <TabIcon emoji="🌍" focused={focused} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="search"
+          options={{
+            title: 'Pretraži',
+            tabBarIcon: ({ focused }: { focused: boolean }) => (
+              <TabIcon emoji="🔍" focused={focused} />
+            ),
           }}
         />
         <Tabs.Screen
           name="saved"
           options={{
             title: 'Saved',
-            tabBarIcon: ({ color }) => <TabIcon emoji="🔖" color={color} />,
+            tabBarIcon: ({ focused }: { focused: boolean }) => (
+              <TabIcon emoji="🔖" focused={focused} />
+            ),
           }}
         />
       </Tabs>
@@ -34,10 +47,10 @@ export default function RootLayout() {
   );
 }
 
-function TabIcon({ emoji, color }: { emoji: string; color: string; [key: string]: unknown }) {
+function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return (
     <View style={styles.iconWrap}>
-      <Text style={[styles.iconEmoji, { opacity: color === '#fff' ? 1 : 0.35 }]}>{emoji}</Text>
+      <Text style={[styles.iconEmoji, { opacity: focused ? 1 : 0.35 }]}>{emoji}</Text>
     </View>
   );
 }

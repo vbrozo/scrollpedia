@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,16 +11,22 @@ import {
 } from 'react-native';
 import { useArticles } from '../src/hooks/useArticles';
 import ArticleCard from '../src/components/ArticleCard';
+import CategoryFilter from '../src/components/CategoryFilter';
+import ArticleModal from '../src/components/ArticleModal';
 import { WikiArticle } from '../src/types';
 
 export default function DiscoverScreen() {
-  const { width: W, height: H } = useWindowDimensions();
-  const { articles, loading, error, loadMore } = useArticles();
-  const loadedRef = useRef(false);
+  const { height: H } = useWindowDimensions();
+  const [category, setCategory] = useState<string | null>(null);
+  const [modalArticle, setModalArticle] = useState<WikiArticle | null>(null);
+  const { articles, loading, error, loadMore, reset } = useArticles(category);
+  const flatListRef = useRef<FlatList<WikiArticle>>(null);
+  const currentIndexRef = useRef(0);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      loadedRef.current = true;
+    if (!initialized.current) {
+      initialized.current = true;
       loadMore();
     }
   }, []);
@@ -32,8 +38,43 @@ export default function DiscoverScreen() {
     }
   }, []);
 
+  // When category changes, reset and reload
+  const handleCategoryChange = useCallback(
+    (value: string | null) => {
+      setCategory(value);
+      reset();
+      currentIndexRef.current = 0;
+      setTimeout(() => loadMore(), 0);
+    },
+    [reset, loadMore]
+  );
+
+  const handleSkip = useCallback(() => {
+    const next = currentIndexRef.current + 1;
+    if (next < articles.length) {
+      flatListRef.current?.scrollToIndex({ index: next, animated: true });
+    }
+  }, [articles.length]);
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: any) => {
+      if (viewableItems.length > 0) {
+        currentIndexRef.current = viewableItems[0].index ?? 0;
+      }
+    },
+    []
+  );
+
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
+
   function renderItem({ item }: { item: WikiArticle }) {
-    return <ArticleCard article={item} />;
+    return (
+      <ArticleCard
+        article={item}
+        onSkip={handleSkip}
+        onReadMore={() => setModalArticle(item)}
+      />
+    );
   }
 
   function renderFooter() {
@@ -51,7 +92,7 @@ export default function DiscoverScreen() {
         <Text style={styles.errorEmoji}>⚠️</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={loadMore}>
-          <Text style={styles.retryText}>Retry</Text>
+          <Text style={styles.retryText}>Pokušaj ponovo</Text>
         </TouchableOpacity>
       </View>
     );
@@ -67,32 +108,38 @@ export default function DiscoverScreen() {
   }
 
   return (
-    <FlatList
-      data={articles}
-      renderItem={renderItem}
-      keyExtractor={(item) => String(item.pageid)}
-      pagingEnabled
-      snapToInterval={H}
-      snapToAlignment="start"
-      decelerationRate="fast"
-      showsVerticalScrollIndicator={false}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={renderFooter}
-      style={[styles.list, { height: H }]}
-      windowSize={3}
-      initialNumToRender={2}
-      maxToRenderPerBatch={3}
-      getItemLayout={(_, index) => ({ length: H, offset: H * index, index })}
-    />
+    <View style={styles.container}>
+      <FlatList
+        ref={flatListRef}
+        data={articles}
+        renderItem={renderItem}
+        keyExtractor={(item) => String(item.pageid)}
+        pagingEnabled
+        snapToInterval={H}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        showsVerticalScrollIndicator={false}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        style={{ height: H }}
+        windowSize={3}
+        initialNumToRender={2}
+        maxToRenderPerBatch={3}
+        getItemLayout={(_, index) => ({ length: H, offset: H * index, index })}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig.current}
+      />
+
+      <CategoryFilter selected={category} onSelect={handleCategoryChange} />
+
+      <ArticleModal article={modalArticle} onClose={() => setModalArticle(null)} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  list: {
-    flex: 1,
-    backgroundColor: '#0a0a0a',
-  },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
   center: {
     flex: 1,
     backgroundColor: '#0a0a0a',
@@ -100,16 +147,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
   },
-  loader: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0a0a0a',
-  },
-  loadingText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 14,
-    marginTop: 12,
-  },
+  loader: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0a' },
+  loadingText: { color: 'rgba(255,255,255,0.5)', fontSize: 14, marginTop: 12 },
   errorEmoji: { fontSize: 40 },
   errorText: {
     color: 'rgba(255,255,255,0.6)',
