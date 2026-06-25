@@ -87,7 +87,7 @@ const PROPS = '&prop=pageimages|extracts|info&exintro=1&explaintext=1&piprop=thu
 
 function processPages(pages: Record<string, any>, lang: string): WikiArticle[] {
   return Object.values(pages)
-    .filter((p: any) => p.extract && p.extract.trim().length > 50)
+    .filter((p: any) => p.extract && p.extract.trim().length > 50 && p.thumbnail?.source)
     .map((p: any) => ({
       pageid: p.pageid,
       lang,
