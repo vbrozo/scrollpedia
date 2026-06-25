@@ -169,7 +169,7 @@ export default function DiscoverScreen() {
   // shell mounting (HTML splash removed) and the first data/onboarding appearing.
   const showSkeletons = feedData.length === 0 && !error;
 
-  function renderItem({ item }: { item: WikiArticle }) {
+  function renderItem({ item, index }: { item: WikiArticle; index: number }) {
     if (item.isHighlight) {
       return <DailyHighlightCard article={item} onReadMore={() => setModalArticle(item)} />;
     }
@@ -177,7 +177,7 @@ export default function DiscoverScreen() {
       return <OnThisDayCard article={item} onReadMore={() => setModalArticle(item)} />;
     }
     return (
-      <ArticleCard article={item} onSkip={handleSkip} onReadMore={() => setModalArticle(item)} />
+      <ArticleCard article={item} index={index} total={feedData.length} onSkip={handleSkip} onReadMore={() => setModalArticle(item)} />
     );
   }
 
@@ -277,15 +277,15 @@ export default function DiscoverScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: '#0d1128' },
   center: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#0d1128',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
   },
-  loader: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0a' },
+  loader: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#0d1128' },
   errorEmoji: { fontSize: 40 },
   endEmoji: { fontSize: 32, color: 'rgba(255,255,255,0.4)', marginBottom: 8 },
   errorText: {

@@ -98,8 +98,19 @@ export default function SearchScreen() {
 
       {!loading && !searched && (
         <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>🌍</Text>
-          <Text style={styles.emptyText}>{t.searchEmpty}</Text>
+          {Platform.OS === 'web' ? (
+            // @ts-ignore
+            <div dangerouslySetInnerHTML={{ __html: `<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g2g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5e7fff"/><stop offset="100%" stop-color="#a45eff"/></linearGradient></defs><circle cx="36" cy="36" r="31" stroke="url(#g2g)" stroke-width="2"/><path d="M36 5Q44 18 44 36Q44 54 36 67" stroke="url(#g2g)" stroke-width="1.5" fill="none"/><path d="M36 5Q28 18 28 36Q28 54 36 67" stroke="url(#g2g)" stroke-width="1.5" fill="none"/><line x1="7" y1="26" x2="65" y2="26" stroke="url(#g2g)" stroke-width="1.3"/><line x1="5" y1="36" x2="67" y2="36" stroke="url(#g2g)" stroke-width="1.3"/><line x1="7" y1="46" x2="65" y2="46" stroke="url(#g2g)" stroke-width="1.3"/></svg>` }} />
+          ) : (
+            <Text style={styles.emptyEmoji}>🌍</Text>
+          )}
+          <Text style={styles.emptyTitle}>{t.searchEmpty}</Text>
+          <Text style={styles.emptySubtitle}>Pristup milijunima Wikipedia{'\n'}članaka na dlanu</Text>
+          <View style={styles.dots}>
+            <View style={[styles.dot, { width: 28, backgroundColor: '#5e7fff' }]} />
+            <View style={[styles.dot, { width: 18, backgroundColor: '#a45eff' }]} />
+            <View style={[styles.dot, { width: 36, backgroundColor: '#e040cc' }]} />
+          </View>
         </View>
       )}
 
@@ -124,14 +135,14 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#0d1128',
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
   },
   header: {
     color: '#fff',
-    fontSize: 26,
+    fontSize: 34,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: -0.5,
     paddingHorizontal: 20,
     marginBottom: 14,
   },
@@ -140,21 +151,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 16,
     marginBottom: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: '#1c1c1c',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: 'rgba(255,255,255,0.1)',
     gap: 10,
   },
   inputIcon: { fontSize: 16 },
   input: {
     flex: 1,
     color: '#fff',
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '400',
     padding: 0,
+    fontFamily: Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined,
   },
   clearBtn: {
     color: 'rgba(255,255,255,0.4)',
@@ -166,14 +178,31 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     alignItems: 'center',
     paddingHorizontal: 40,
-    gap: 12,
+    gap: 16,
   },
   emptyEmoji: { fontSize: 44 },
+  emptyTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 26,
+    fontFamily: Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined,
+  },
+  emptySubtitle: {
+    color: 'rgba(255,255,255,0.38)',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+    fontFamily: Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined,
+  },
   emptyText: {
     color: 'rgba(255,255,255,0.4)',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 21,
   },
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 6 },
+  dot: { height: 3, borderRadius: 2 },
   list: { paddingBottom: 100, paddingTop: 8 },
 });

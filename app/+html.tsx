@@ -6,6 +6,9 @@ export default function Root({ children }: PropsWithChildren) {
     <html lang="hr">
       <head>
         <meta charSet="utf-8" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
 
         {/* Eruda — in-app mobile devtools (Console / Network / Elements).
             Only loads when the URL has ?debug — keeps it out of normal use.

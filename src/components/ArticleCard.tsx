@@ -11,22 +11,35 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
-import ArticleImage from './ArticleImage';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
 
 interface Props {
   article: WikiArticle;
+  index?: number;
+  total?: number;
   onSkip?: () => void;
   onReadMore?: () => void;
 }
 
-const SWIPE_THRESHOLD = 80;
+const ACCENTS = [
+  { color: '#5e7fff', bg: 'rgba(94,127,255,0.18)', border: 'rgba(94,127,255,0.32)', globe: 'rgba(94,127,255,0.11)' },
+  { color: '#a45eff', bg: 'rgba(164,94,255,0.18)',  border: 'rgba(164,94,255,0.32)',  globe: 'rgba(164,94,255,0.11)' },
+  { color: '#e040cc', bg: 'rgba(224,64,204,0.18)',  border: 'rgba(224,64,204,0.32)',  globe: 'rgba(224,64,204,0.11)' },
+];
 
-export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
+const DOT_SETS = [
+  [{ w: 36, c: '#5e7fff' }, { w: 22, c: '#a45eff' }, { w: 14, c: '#e040cc' }],
+  [{ w: 22, c: '#a45eff' }, { w: 36, c: '#e040cc' }, { w: 16, c: '#5e7fff' }],
+  [{ w: 14, c: '#e040cc' }, { w: 36, c: '#f0bd18' }, { w: 24, c: '#5e7fff' }],
+];
+
+const SWIPE_THRESHOLD = 80;
+const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
+
+export default function ArticleCard({ article, index = 0, total = 0, onSkip, onReadMore }: Props) {
   const { width: W, height: H } = useWindowDimensions();
   const { lang } = useLanguage();
   const t = getStrings(lang);
@@ -34,51 +47,31 @@ export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
   const saved = isSaved(article);
   const [swipeLabel, setSwipeLabel] = useState<'SAVE' | 'SKIP' | null>(null);
   const swipeX = useRef(new Animated.Value(0)).current;
-
-  // Keep latest article reference for the PanResponder (created once)
   const articleRef = useRef(article);
   articleRef.current = article;
   const saveRef = useRef(save);
   saveRef.current = save;
 
-  function triggerSave() {
-    saveRef.current(articleRef.current);
-  }
-
-  function toggleSave() {
-    toggle(article);
-  }
-
-  async function handleShare() {
-    await Share.share({ title: article.title, url: article.fullurl, message: article.fullurl });
-  }
-
-  function handleOpen() {
-    Linking.openURL(article.fullurl);
-  }
+  const accent = ACCENTS[index % 3];
+  const dots = DOT_SETS[index % 3];
+  const isWeb = Platform.OS === 'web';
+  const globeSize = Math.min(W, H) * 0.62;
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
-        Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8,
+      onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8,
       onPanResponderMove: (_, { dx }) => {
         swipeX.setValue(dx);
         setSwipeLabel(dx > 20 ? 'SAVE' : dx < -20 ? 'SKIP' : null);
       },
       onPanResponderRelease: (_, { dx }) => {
         if (dx > SWIPE_THRESHOLD) {
-          triggerSave();
+          saveRef.current(articleRef.current);
           Animated.spring(swipeX, { toValue: 0, useNativeDriver: true }).start();
           setSwipeLabel(null);
         } else if (dx < -SWIPE_THRESHOLD) {
-          Animated.timing(swipeX, {
-            toValue: -500,
-            duration: 220,
-            useNativeDriver: true,
-          }).start(() => {
-            swipeX.setValue(0);
-            setSwipeLabel(null);
-            onSkip?.();
+          Animated.timing(swipeX, { toValue: -500, duration: 220, useNativeDriver: true }).start(() => {
+            swipeX.setValue(0); setSwipeLabel(null); onSkip?.();
           });
         } else {
           Animated.spring(swipeX, { toValue: 0, useNativeDriver: true }).start();
@@ -92,90 +85,64 @@ export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
     })
   ).current;
 
-  const rotate = swipeX.interpolate({
-    inputRange: [-200, 0, 200],
-    outputRange: ['-4deg', '0deg', '4deg'],
-    extrapolate: 'clamp',
-  });
-
-  const truncated =
-    article.extract.length > 280 ? article.extract.slice(0, 277) + '…' : article.extract;
-  const isWeb = Platform.OS === 'web';
+  const rotate = swipeX.interpolate({ inputRange: [-200, 0, 200], outputRange: ['-3deg', '0deg', '3deg'], extrapolate: 'clamp' });
+  const truncated = article.extract.length > 220 ? article.extract.slice(0, 217) + '…' : article.extract;
 
   return (
     <Animated.View
       style={[styles.card, { width: W, height: H }, { transform: [{ translateX: swipeX }, { rotate }] }]}
       {...(isWeb ? {} : panResponder.panHandlers)}
     >
-      <ArticleImage uri={article.thumbnail?.source} width={W} height={H} />
+      {/* Ghost globe */}
+      <View style={[styles.globe, { width: globeSize, height: globeSize, borderRadius: globeSize / 2, top: H * 0.1, left: (W - globeSize) / 2, borderColor: accent.globe }]}>
+        <View style={[styles.meridian, { left: globeSize * 0.25, right: globeSize * 0.25, borderColor: accent.globe.replace('0.11', '0.08') }]} />
+        <View style={[styles.meridian, { left: globeSize * 0.415, right: globeSize * 0.415, borderColor: accent.globe.replace('0.11', '0.05') }]} />
+        <View style={[styles.latitude, { top: '38%', backgroundColor: accent.globe.replace('0.11', '0.07') }]} />
+        <View style={[styles.latitude, { top: '62%', backgroundColor: accent.globe.replace('0.11', '0.07') }]} />
+      </View>
 
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.93)']}
-        locations={[0.15, 0.5, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      {swipeLabel === 'SAVE' && <View style={[styles.swipeOverlay, styles.swipeOverlaySave]}><Text style={styles.swipeOverlayText}>🔖 {t.saveOverlay}</Text></View>}
+      {swipeLabel === 'SKIP' && <View style={[styles.swipeOverlay, styles.swipeOverlaySkip]}><Text style={styles.swipeOverlayText}>→ {t.skipOverlay}</Text></View>}
 
-      {/* Swipe overlay label */}
-      {swipeLabel === 'SAVE' && (
-        <View style={[styles.swipeOverlay, styles.swipeOverlaySave]}>
-          <Text style={styles.swipeOverlayText}>🔖 {t.saveOverlay}</Text>
-        </View>
-      )}
-      {swipeLabel === 'SKIP' && (
-        <View style={[styles.swipeOverlay, styles.swipeOverlaySkip]}>
-          <Text style={styles.swipeOverlayText}>→ {t.skipOverlay}</Text>
-        </View>
-      )}
-
-      {/* Content */}
       <View style={[styles.content, { paddingBottom: isWeb ? 80 : Platform.OS === 'ios' ? 110 : 90 }]}>
-        <View style={styles.textBox}>
-          <Text style={styles.title} numberOfLines={3}>{article.title}</Text>
-          {truncated ? <Text style={styles.extract}>{truncated}</Text> : null}
-          <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
-            <Text style={styles.readMoreText}>{t.readMore} →</Text>
-          </TouchableOpacity>
+        <View style={styles.pillRow}>
+          <View style={[styles.pill, { backgroundColor: accent.bg, borderColor: accent.border }]}>
+            <Text style={[styles.pillText, { color: accent.color, fontFamily: SORA }]}>Wikipedia</Text>
+          </View>
+          {total > 0 && <Text style={[styles.counter, { fontFamily: SORA }]}>{index + 1} / {total}</Text>}
+        </View>
+
+        <Text style={[styles.title, { fontFamily: SORA }]} numberOfLines={3}>{article.title}</Text>
+        {truncated ? <Text style={[styles.extract, { fontFamily: SORA }]} numberOfLines={4}>{truncated}</Text> : null}
+
+        <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
+          <Text style={[styles.readMoreText, { fontFamily: SORA }]}>{t.readMore} →</Text>
+        </TouchableOpacity>
+
+        <View style={styles.dots}>
+          {dots.map((d, i) => <View key={i} style={[styles.dot, { width: d.w, backgroundColor: d.c }]} />)}
         </View>
 
         <View style={styles.actions}>
-          <ActionButton
-            emoji={saved ? '🔖' : '🏷️'}
-            label={saved ? t.saved : t.save}
-            onPress={toggleSave}
-            active={saved}
-          />
-          <ActionButton emoji="↗️" label={t.share} onPress={handleShare} />
-          <ActionButton emoji="🌐" label={t.open} onPress={handleOpen} />
+          <ActionButton emoji={saved ? '🔖' : '🏷️'} label={saved ? t.saved : t.save} onPress={() => toggle(article)} active={saved} />
+          <ActionButton emoji="↗️" label={t.share} onPress={() => Share.share({ title: article.title, url: article.fullurl, message: article.fullurl })} />
+          <ActionButton emoji="🌐" label={t.open} onPress={() => Linking.openURL(article.fullurl)} />
         </View>
       </View>
 
-      {/* Badge */}
-      <View style={[styles.badge, { top: isWeb ? 24 : Platform.OS === 'ios' ? 60 : 40 }]}>
-        <Text style={styles.badgeText}>SCROLLPEDIA</Text>
-      </View>
-
-      {/* Swipe hints */}
       {!isWeb && (
-        <View style={styles.hints}>
-          <Text style={styles.hintText}>← {t.skipHint}</Text>
-          <Text style={styles.hintText}>{t.saveHint} →</Text>
+        <View style={[styles.hint, { top: Platform.OS === 'ios' ? 70 : 50 }]}>
+          <Text style={styles.hintArrow}>↑</Text>
+          <Text style={[styles.hintText, { fontFamily: SORA }]}>povuci gore</Text>
         </View>
       )}
     </Animated.View>
   );
 }
 
-function ActionButton({
-  emoji, label, onPress, active,
-}: {
-  emoji: string; label: string; onPress: () => void; active?: boolean;
-}) {
+function ActionButton({ emoji, label, onPress, active }: { emoji: string; label: string; onPress: () => void; active?: boolean }) {
   return (
-    <TouchableOpacity
-      style={[styles.btn, active && styles.btnActive]}
-      onPress={onPress}
-      activeOpacity={0.75}
-    >
+    <TouchableOpacity style={[styles.btn, active && styles.btnActive]} onPress={onPress} activeOpacity={0.75}>
       <Text style={styles.btnEmoji}>{emoji}</Text>
       <Text style={styles.btnLabel}>{label}</Text>
     </TouchableOpacity>
@@ -183,135 +150,31 @@ function ActionButton({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#0a0a0a',
-    overflow: 'hidden',
-  },
-  content: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-  },
-  textBox: {
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(0,0,0,0.52)',
-  },
-  title: {
-    color: '#ffffff',
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-    marginBottom: 8,
-    lineHeight: 28,
-  },
-  extract: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: 14,
-    lineHeight: 21,
-    fontWeight: '400',
-    marginBottom: 10,
-  },
-  readMoreBtn: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  readMoreText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  btn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-  },
-  btnActive: {
-    backgroundColor: 'rgba(255, 220, 80, 0.2)',
-    borderColor: 'rgba(255, 220, 80, 0.4)',
-  },
+  card: { backgroundColor: '#0d1128', overflow: 'hidden' },
+  globe: { position: 'absolute', borderWidth: 1 },
+  meridian: { position: 'absolute', top: 0, bottom: 0, borderRadius: 999, borderWidth: 1 },
+  latitude: { position: 'absolute', left: 0, right: 0, height: 1 },
+  content: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 22 },
+  pillRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  pill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+  pillText: { fontSize: 12, fontWeight: '600' },
+  counter: { color: 'rgba(255,255,255,0.28)', fontSize: 12 },
+  title: { color: '#fff', fontSize: 34, fontWeight: '800', letterSpacing: -0.5, lineHeight: 40, marginBottom: 12 },
+  extract: { color: 'rgba(255,255,255,0.58)', fontSize: 15, lineHeight: 25, marginBottom: 14 },
+  readMoreBtn: { alignSelf: 'flex-start', marginBottom: 18 },
+  readMoreText: { color: 'rgba(255,255,255,0.38)', fontSize: 13, fontWeight: '600' },
+  dots: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 16 },
+  dot: { height: 3, borderRadius: 2 },
+  actions: { flexDirection: 'row', gap: 10 },
+  btn: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  btnActive: { backgroundColor: 'rgba(94,127,255,0.15)', borderColor: 'rgba(94,127,255,0.35)' },
   btnEmoji: { fontSize: 20, marginBottom: 4 },
-  btnLabel: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  badge: {
-    position: 'absolute',
-    left: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  badgeText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  swipeOverlay: {
-    position: 'absolute',
-    top: '40%',
-    left: 30,
-    right: 30,
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    borderWidth: 2,
-    zIndex: 20,
-  },
-  swipeOverlaySave: {
-    backgroundColor: 'rgba(50, 200, 100, 0.25)',
-    borderColor: 'rgba(50, 200, 100, 0.7)',
-  },
-  swipeOverlaySkip: {
-    backgroundColor: 'rgba(255, 80, 80, 0.2)',
-    borderColor: 'rgba(255, 80, 80, 0.6)',
-  },
-  swipeOverlayText: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  hints: {
-    position: 'absolute',
-    bottom: 160,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    opacity: 0.25,
-  },
-  hintText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
+  btnLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
+  swipeOverlay: { position: 'absolute', top: '40%', left: 30, right: 30, alignItems: 'center', paddingVertical: 16, borderRadius: 16, borderWidth: 2, zIndex: 20 },
+  swipeOverlaySave: { backgroundColor: 'rgba(94,127,255,0.2)', borderColor: 'rgba(94,127,255,0.6)' },
+  swipeOverlaySkip: { backgroundColor: 'rgba(255,80,80,0.15)', borderColor: 'rgba(255,80,80,0.5)' },
+  swipeOverlayText: { color: '#fff', fontSize: 20, fontWeight: '800', letterSpacing: 2 },
+  hint: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 3, opacity: 0.28 },
+  hintArrow: { color: '#fff', fontSize: 16 },
+  hintText: { color: '#fff', fontSize: 11, fontWeight: '600', letterSpacing: 0.08 },
 });

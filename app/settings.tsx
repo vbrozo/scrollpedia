@@ -120,7 +120,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: '#0d1128',
   },
   content: {
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
@@ -128,9 +128,9 @@ const styles = StyleSheet.create({
   },
   header: {
     color: '#fff',
-    fontSize: 26,
+    fontSize: 34,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: -0.5,
     paddingHorizontal: 20,
     marginBottom: 28,
   },
@@ -150,23 +150,23 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#1e1e1e',
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   langRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#141414',
+    backgroundColor: 'rgb(20,27,52)',
     gap: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#1e1e1e',
   },
   langRowActive: {
-    backgroundColor: '#1c1c1c',
+    backgroundColor: 'rgba(94,127,255,0.08)',
   },
   langFlag: {
-    fontSize: 26,
+    fontSize: 34,
   },
   langInfo: {
     flex: 1,
@@ -188,12 +188,12 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   check: {
-    color: '#0a0a0a',
+    color: '#5e7fff',
     fontSize: 13,
     fontWeight: '800',
   },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#1e1e1e',
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   infoRow: {
     flexDirection: 'row',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#141414',
+    backgroundColor: 'rgb(20,27,52)',
     borderBottomWidth: 1,
     borderBottomColor: '#1e1e1e',
   },
@@ -238,9 +238,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderRadius: 16,
-    backgroundColor: '#141414',
+    backgroundColor: 'rgb(20,27,52)',
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   clearBtnDone: {
     backgroundColor: '#0d1f0d',
