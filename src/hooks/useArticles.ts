@@ -6,6 +6,7 @@ export function useArticles(category: string | null = null, lang = 'hr') {
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const loadingRef = useRef(false);
 
   const seenIds = useRef<Set<number>>(new Set());
@@ -17,11 +18,14 @@ export function useArticles(category: string | null = null, lang = 'hr') {
     setError(null);
     try {
       if (category) {
-        // categorymembers returns a fixed set — a single fetch is enough
         const next = await fetchByCategory(category, lang);
         const fresh = next.filter((a) => !seenIds.current.has(a.pageid));
         fresh.forEach((a) => seenIds.current.add(a.pageid));
-        if (fresh.length > 0) setArticles((prev) => [...prev, ...fresh]);
+        if (fresh.length > 0) {
+          setArticles((prev) => [...prev, ...fresh]);
+        } else {
+          setHasMore(false);
+        }
       } else {
         // Random feed: the image-only filter thins each batch, so keep
         // fetching until we collect enough new articles for a smooth scroll.
@@ -37,7 +41,10 @@ export function useArticles(category: string | null = null, lang = 'hr') {
             }
           }
         }
-        if (collected.length > 0) setArticles((prev) => [...prev, ...collected]);
+        if (collected.length > 0) {
+          setArticles((prev) => [...prev, ...collected]);
+        }
+        // Random feed is effectively infinite — never set hasMore=false
       }
     } catch (e: any) {
       setError(e.message ?? 'Greška pri učitavanju');
@@ -51,9 +58,10 @@ export function useArticles(category: string | null = null, lang = 'hr') {
     loadingRef.current = false;
     seenIds.current = new Set();
     setLoading(false);
+    setHasMore(true);
     setArticles([]);
     setError(null);
   }, []);
 
-  return { articles, loading, error, loadMore, reset };
+  return { articles, loading, error, hasMore, loadMore, reset };
 }
