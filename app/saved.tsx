@@ -7,11 +7,15 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getSaved, unsaveArticle } from '../src/utils/storage';
+import { getArticleKey, getSaved, unsaveArticle } from '../src/utils/storage';
 import SavedCard from '../src/components/SavedCard';
 import { WikiArticle } from '../src/types';
+import { useLanguage } from '../src/context/LanguageContext';
+import { getStrings } from '../src/utils/i18n';
 
 export default function SavedScreen() {
+  const { lang } = useLanguage();
+  const t = getStrings(lang);
   const [articles, setArticles] = useState<WikiArticle[]>([]);
 
   useFocusEffect(
@@ -20,18 +24,19 @@ export default function SavedScreen() {
     }, [])
   );
 
-  async function handleRemove(pageid: number) {
-    await unsaveArticle(pageid);
-    setArticles((prev) => prev.filter((a) => a.pageid !== pageid));
+  async function handleRemove(article: WikiArticle) {
+    await unsaveArticle(article);
+    const key = getArticleKey(article);
+    setArticles((prev) => prev.filter((a) => getArticleKey(a) !== key));
   }
 
   if (articles.length === 0) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyEmoji}>🔖</Text>
-        <Text style={styles.emptyTitle}>Nothing saved yet</Text>
+        <Text style={styles.emptyTitle}>{t.savedEmptyTitle}</Text>
         <Text style={styles.emptySubtitle}>
-          Tap the Save button on any article to bookmark it here.
+          {t.savedEmptySubtitle}
         </Text>
       </View>
     );
@@ -39,10 +44,10 @@ export default function SavedScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Saved Articles</Text>
+      <Text style={styles.header}>{t.savedHeader}</Text>
       <FlatList
         data={articles}
-        keyExtractor={(item) => String(item.pageid)}
+        keyExtractor={getArticleKey}
         renderItem={({ item }) => (
           <SavedCard article={item} onRemove={handleRemove} />
         )}

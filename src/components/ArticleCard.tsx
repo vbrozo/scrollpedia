@@ -15,6 +15,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
 import { isArticleSaved, saveArticle, unsaveArticle } from '../utils/storage';
+import { useLanguage } from '../context/LanguageContext';
+import { getStrings } from '../utils/i18n';
 
 interface Props {
   article: WikiArticle;
@@ -26,16 +28,28 @@ const SWIPE_THRESHOLD = 80;
 
 export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
   const { width: W, height: H } = useWindowDimensions();
+  const { lang } = useLanguage();
+  const t = getStrings(lang);
   const [saved, setSaved] = useState(false);
   const [swipeLabel, setSwipeLabel] = useState<'SAVE' | 'SKIP' | null>(null);
   const swipeX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    isArticleSaved(article.pageid).then(setSaved);
-  }, [article.pageid]);
+    isArticleSaved(article).then(setSaved);
+  }, [article]);
 
   async function triggerSave() {
     if (!saved) {
+      await saveArticle(article);
+      setSaved(true);
+    }
+  }
+
+  async function toggleSave() {
+    if (saved) {
+      await unsaveArticle(article);
+      setSaved(false);
+    } else {
       await saveArticle(article);
       setSaved(true);
     }
@@ -121,12 +135,12 @@ export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
       {/* Swipe overlay label */}
       {swipeLabel === 'SAVE' && (
         <View style={[styles.swipeOverlay, styles.swipeOverlaySave]}>
-          <Text style={styles.swipeOverlayText}>🔖 SAVE</Text>
+          <Text style={styles.swipeOverlayText}>🔖 {t.saveOverlay}</Text>
         </View>
       )}
       {swipeLabel === 'SKIP' && (
         <View style={[styles.swipeOverlay, styles.swipeOverlaySkip]}>
-          <Text style={styles.swipeOverlayText}>→ SKIP</Text>
+          <Text style={styles.swipeOverlayText}>→ {t.skipOverlay}</Text>
         </View>
       )}
 
@@ -136,19 +150,19 @@ export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
           <Text style={styles.title} numberOfLines={3}>{article.title}</Text>
           {truncated ? <Text style={styles.extract}>{truncated}</Text> : null}
           <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
-            <Text style={styles.readMoreText}>Čitaj više →</Text>
+            <Text style={styles.readMoreText}>{t.readMore} →</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.actions}>
           <ActionButton
             emoji={saved ? '🔖' : '🏷️'}
-            label={saved ? 'Saved' : 'Save'}
-            onPress={async () => { await triggerSave(); }}
+            label={saved ? t.saved : t.save}
+            onPress={toggleSave}
             active={saved}
           />
-          <ActionButton emoji="↗️" label="Dijeli" onPress={handleShare} />
-          <ActionButton emoji="🌐" label="Otvori" onPress={handleOpen} />
+          <ActionButton emoji="↗️" label={t.share} onPress={handleShare} />
+          <ActionButton emoji="🌐" label={t.open} onPress={handleOpen} />
         </View>
       </View>
 
@@ -160,8 +174,8 @@ export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
       {/* Swipe hints */}
       {!isWeb && (
         <View style={styles.hints}>
-          <Text style={styles.hintText}>← skip</Text>
-          <Text style={styles.hintText}>save →</Text>
+          <Text style={styles.hintText}>← {t.skipHint}</Text>
+          <Text style={styles.hintText}>{t.saveHint} →</Text>
         </View>
       )}
     </Animated.View>

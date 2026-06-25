@@ -14,30 +14,32 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
 import { isArticleSaved, saveArticle, unsaveArticle } from '../utils/storage';
+import { useLanguage } from '../context/LanguageContext';
+import { getStrings } from '../utils/i18n';
 
 interface Props {
   article: WikiArticle;
   onReadMore?: () => void;
 }
 
-const DAYS_HR = ['Nedjelja', 'Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota'];
-const MONTHS_HR = [
-  'siječnja', 'veljače', 'ožujka', 'travnja', 'svibnja', 'lipnja',
-  'srpnja', 'kolovoza', 'rujna', 'listopada', 'studenog', 'prosinca',
-];
-
-function todayLabel() {
-  const now = new Date();
-  return `${DAYS_HR[now.getDay()]}, ${now.getDate()}. ${MONTHS_HR[now.getMonth()]} ${now.getFullYear()}.`;
+function todayLabel(lang: string) {
+  return new Intl.DateTimeFormat(lang, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
 }
 
 export default function DailyHighlightCard({ article, onReadMore }: Props) {
   const { width: W, height: H } = useWindowDimensions();
+  const { lang } = useLanguage();
+  const t = getStrings(lang);
   const [saved, setSaved] = useState(false);
   const shimmer = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    isArticleSaved(article.pageid).then(setSaved);
+    isArticleSaved(article).then(setSaved);
     // Subtle shimmer on the gold badge
     Animated.loop(
       Animated.sequence([
@@ -45,10 +47,10 @@ export default function DailyHighlightCard({ article, onReadMore }: Props) {
         Animated.timing(shimmer, { toValue: 0, duration: 1800, useNativeDriver: true }),
       ])
     ).start();
-  }, [article.pageid]);
+  }, [article, shimmer]);
 
   async function toggleSave() {
-    if (saved) { await unsaveArticle(article.pageid); setSaved(false); }
+    if (saved) { await unsaveArticle(article); setSaved(false); }
     else { await saveArticle(article); setSaved(true); }
   }
 
@@ -84,10 +86,10 @@ export default function DailyHighlightCard({ article, onReadMore }: Props) {
       <View style={[styles.topRow, { top: isWeb ? 24 : Platform.OS === 'ios' ? 60 : 40 }]}>
         <Animated.View style={[styles.badge, { opacity: badgeOpacity }]}>
           <Text style={styles.badgeStar}>★</Text>
-          <Text style={styles.badgeText}>ČLANAK DANA</Text>
+          <Text style={styles.badgeText}>{t.dailyArticle}</Text>
         </Animated.View>
         <View style={styles.dateChip}>
-          <Text style={styles.dateText}>{todayLabel()}</Text>
+          <Text style={styles.dateText}>{todayLabel(lang)}</Text>
         </View>
       </View>
 
@@ -99,25 +101,25 @@ export default function DailyHighlightCard({ article, onReadMore }: Props) {
           <Text style={styles.title} numberOfLines={3}>{article.title}</Text>
           {truncated ? <Text style={styles.extract}>{truncated}</Text> : null}
           <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
-            <Text style={styles.readMoreText}>Čitaj više →</Text>
+            <Text style={styles.readMoreText}>{t.readMore} →</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.actions}>
           <ActionButton
             emoji={saved ? '🔖' : '🏷️'}
-            label={saved ? 'Saved' : 'Save'}
+            label={saved ? t.saved : t.save}
             onPress={toggleSave}
             active={saved}
           />
           <ActionButton
             emoji="↗️"
-            label="Dijeli"
+            label={t.share}
             onPress={() => Share.share({ title: article.title, url: article.fullurl, message: article.fullurl })}
           />
           <ActionButton
             emoji="🌐"
-            label="Otvori"
+            label={t.open}
             onPress={() => Linking.openURL(article.fullurl)}
           />
         </View>

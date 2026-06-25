@@ -14,6 +14,7 @@ import { fetchFullArticle } from '../utils/wikipedia';
 import { WikiArticle } from '../types';
 import RelatedArticles from './RelatedArticles';
 import { useLanguage } from '../context/LanguageContext';
+import { getStrings } from '../utils/i18n';
 
 interface Props {
   article: WikiArticle | null;
@@ -22,6 +23,7 @@ interface Props {
 
 export default function ArticleModal({ article, onClose }: Props) {
   const { lang } = useLanguage();
+  const t = getStrings(lang);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   // Stack for navigating into related articles
@@ -105,7 +107,7 @@ export default function ArticleModal({ article, onClose }: Props) {
             onPress={() => current && Linking.openURL(current.fullurl)}
             activeOpacity={0.8}
           >
-            <Text style={styles.openBtnText}>Otvori na Wikipediji →</Text>
+            <Text style={styles.openBtnText}>{t.openWikipedia} →</Text>
           </TouchableOpacity>
         </View>
       </View>

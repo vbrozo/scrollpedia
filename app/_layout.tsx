@@ -1,51 +1,61 @@
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { LanguageProvider } from '../src/context/LanguageContext';
+import { LanguageProvider, useLanguage } from '../src/context/LanguageContext';
+import { getStrings } from '../src/utils/i18n';
 
 export default function RootLayout() {
   return (
     <LanguageProvider>
       <StatusBar style="light" />
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: styles.tabBar,
-          tabBarActiveTintColor: '#fff',
-          tabBarInactiveTintColor: 'rgba(255,255,255,0.35)',
-          tabBarLabelStyle: styles.tabLabel,
-        }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Otkrij',
-            tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🌍" focused={focused} />,
-          }}
-        />
-        <Tabs.Screen
-          name="search"
-          options={{
-            title: 'Pretraži',
-            tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🔍" focused={focused} />,
-          }}
-        />
-        <Tabs.Screen
-          name="saved"
-          options={{
-            title: 'Saved',
-            tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🔖" focused={focused} />,
-          }}
-        />
-        <Tabs.Screen
-          name="settings"
-          options={{
-            title: 'Jezik',
-            tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="⚙️" focused={focused} />,
-          }}
-        />
-      </Tabs>
+      <AppTabs />
     </LanguageProvider>
+  );
+}
+
+function AppTabs() {
+  const { lang } = useLanguage();
+  const t = getStrings(lang);
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: '#fff',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.35)',
+        tabBarLabelStyle: styles.tabLabel,
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: t.discover,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🌍" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: t.search,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🔍" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="saved"
+        options={{
+          title: t.savedTab,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🔖" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: t.settingsTab,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="⚙️" focused={focused} />,
+        }}
+      />
+    </Tabs>
   );
 }
 

@@ -2,13 +2,18 @@ import React from 'react';
 import { Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
+import { useLanguage } from '../context/LanguageContext';
+import { getStrings } from '../utils/i18n';
 
 interface Props {
   article: WikiArticle;
-  onRemove: (pageid: number) => void;
+  onRemove: (article: WikiArticle) => void;
 }
 
 export default function SavedCard({ article, onRemove }: Props) {
+  const { lang } = useLanguage();
+  const t = getStrings(lang);
+
   return (
     <View style={styles.card}>
       {article.thumbnail ? (
@@ -23,10 +28,10 @@ export default function SavedCard({ article, onRemove }: Props) {
         </Text>
         <View style={styles.row}>
           <TouchableOpacity onPress={() => Linking.openURL(article.fullurl)} style={styles.pill}>
-            <Text style={styles.pillText}>Open</Text>
+            <Text style={styles.pillText}>{t.open}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => onRemove(article.pageid)} style={[styles.pill, styles.pillDanger]}>
-            <Text style={[styles.pillText, styles.pillTextDanger]}>Remove</Text>
+          <TouchableOpacity onPress={() => onRemove(article)} style={[styles.pill, styles.pillDanger]}>
+            <Text style={[styles.pillText, styles.pillTextDanger]}>{t.remove}</Text>
           </TouchableOpacity>
         </View>
       </View>

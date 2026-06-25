@@ -1,5 +1,6 @@
 export interface WikiArticle {
   pageid: number;
+  lang?: string;
   title: string;
   extract: string;
   thumbnail?: {

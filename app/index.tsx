@@ -44,7 +44,8 @@ export default function DiscoverScreen() {
   const { articles, loading, error, loadMore, reset } = useArticles(category, lang);
   const flatListRef = useRef<FlatList<WikiArticle>>(null);
   const currentIndexRef = useRef(0);
-  const initialized = useRef<string>('');
+  const feedLengthRef = useRef(0);
+  const previousLangRef = useRef(lang);
 
   useEffect(() => {
     if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
@@ -74,12 +75,16 @@ export default function DiscoverScreen() {
       ]);
 
       if (cachedH) {
-        const { key, article } = JSON.parse(cachedH);
-        if (key === todayKey) setHighlight(article);
+        try {
+          const { key, article } = JSON.parse(cachedH);
+          if (key === todayKey) setHighlight(article);
+        } catch {}
       }
       if (cachedO) {
-        const { key, article } = JSON.parse(cachedO);
-        if (key === todayKey) setOnThisDay(article);
+        try {
+          const { key, article } = JSON.parse(cachedO);
+          if (key === todayKey) setOnThisDay(article);
+        } catch {}
       }
 
       const [h, o] = await Promise.all([
@@ -99,29 +104,32 @@ export default function DiscoverScreen() {
     loadSpecialCards();
   }, [lang]);
 
-  // Reload articles when lang changes
+  // Reload articles after React commits category/language changes.
   useEffect(() => {
-    const key = `${lang}-${category}`;
-    if (initialized.current === key) return;
-    initialized.current = key;
+    if (previousLangRef.current !== lang) {
+      previousLangRef.current = lang;
+      if (category !== null) {
+        setCategory(null);
+        return;
+      }
+    }
+
     reset();
-    setCategory(null);
-    setTimeout(() => loadMore(), 0);
-  }, [lang]);
+    currentIndexRef.current = 0;
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    loadMore();
+  }, [category, lang, loadMore, reset]);
 
   const handleCategoryChange = useCallback(
     (value: string | null) => {
       setCategory(value);
-      reset();
-      currentIndexRef.current = 0;
-      setTimeout(() => loadMore(), 0);
     },
-    [reset, loadMore]
+    []
   );
 
   const handleSkip = useCallback(() => {
     const next = currentIndexRef.current + 1;
-    if (next < feedData.length) {
+    if (next < feedLengthRef.current) {
       flatListRef.current?.scrollToIndex({ index: next, animated: true });
     }
   }, []);
@@ -151,6 +159,10 @@ export default function DiscoverScreen() {
           ...regularArticles,
         ]
       : regularArticles;
+
+  useEffect(() => {
+    feedLengthRef.current = feedData.length;
+  }, [feedData.length]);
 
   const showSkeletons = loading && feedData.length === 0;
 
