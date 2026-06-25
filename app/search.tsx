@@ -10,12 +10,14 @@ import {
   View,
 } from 'react-native';
 import { searchArticles } from '../src/utils/wikipedia';
+import { useLanguage } from '../src/context/LanguageContext';
 import { WikiArticle } from '../src/types';
 import SavedCard from '../src/components/SavedCard';
 import ArticleModal from '../src/components/ArticleModal';
 import { saveArticle, unsaveArticle } from '../src/utils/storage';
 
 export default function SearchScreen() {
+  const { lang } = useLanguage();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<WikiArticle[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export default function SearchScreen() {
       setLoading(true);
       setSearched(true);
       try {
-        const res = await searchArticles(text);
+        const res = await searchArticles(text, lang);
         setResults(res);
       } catch {
         setResults([]);

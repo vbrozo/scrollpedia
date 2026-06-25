@@ -1,19 +1,15 @@
 import React from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { CATEGORIES } from '../utils/wikipedia';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { getCategoriesForLang } from '../utils/wikipedia';
 
 interface Props {
   selected: string | null;
   onSelect: (value: string | null) => void;
+  lang: string;
 }
 
-export default function CategoryFilter({ selected, onSelect }: Props) {
+export default function CategoryFilter({ selected, onSelect, lang }: Props) {
+  const categories = getCategoriesForLang(lang);
   return (
     <View style={styles.wrapper} pointerEvents="box-none">
       <ScrollView
@@ -22,7 +18,7 @@ export default function CategoryFilter({ selected, onSelect }: Props) {
         contentContainerStyle={styles.row}
         style={styles.scroll}
       >
-        {CATEGORIES.map((cat) => {
+        {categories.map((cat) => {
           const active = selected === cat.value;
           return (
             <TouchableOpacity
@@ -43,22 +39,9 @@ export default function CategoryFilter({ selected, onSelect }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-  },
-  scroll: {
-    flexGrow: 0,
-  },
-  row: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 8,
-    flexDirection: 'row',
-  },
+  wrapper: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  scroll: { flexGrow: 0 },
+  row: { paddingHorizontal: 14, paddingVertical: 10, gap: 8, flexDirection: 'row' },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -67,16 +50,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
-  chipActive: {
-    backgroundColor: '#fff',
-    borderColor: '#fff',
-  },
-  chipText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  chipTextActive: {
-    color: '#0a0a0a',
-  },
+  chipActive: { backgroundColor: '#fff', borderColor: '#fff' },
+  chipText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
+  chipTextActive: { color: '#0a0a0a' },
 });

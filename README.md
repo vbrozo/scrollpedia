@@ -22,7 +22,13 @@ TikTok-style infinite vertical scroll app that shows random Croatian Wikipedia a
 - **Skeleton loading** — shimmer placeholder cards (4x) shown while initial feed loads; matches exact ArticleCard layout with animated opacity pulse; replaces spinner entirely
 
 ### Discovery
-- **Search tab** — debounced full-text search of Croatian Wikipedia; tap result opens read-more modal
+- **Search tab** — debounced full-text search; language-aware; tap result opens read-more modal
+- **"Na današnji dan"** — second special card in feed; deep purple design; shows year, event description, and related Wikipedia article; fetches from `/api/rest_v1/feed/onthisday/selected`; cached per language per day
+- **Related articles** — horizontal scroll row at bottom of every article modal; fetches from `/api/rest_v1/page/related/{title}`; tap navigates into related article with back button (stack navigation inside modal)
+
+### Language & Localisation
+- **Višejezičnost** — Settings tab with language picker: HR 🇭🇷, EN 🇬🇧, DE 🇩🇪, FR 🇫🇷, ES 🇪🇸, IT 🇮🇹; stored in AsyncStorage; affects feed, search, categories, daily highlight, on this day, and related articles
+- **Language-aware categories** — category names translated per language (e.g. "Sport" → "Šport" in HR, "Sports" in EN, "Deporte" in ES)
 
 ### Platform
 - **PWA** — installable as standalone app on iOS/Android from browser (`manifest.json`, service worker)
@@ -54,11 +60,6 @@ cp -r dist docs          # GitHub Pages serves from /docs
 ### UX / Polish
 - **Haptic feedback** — Vibracija pri saveanju i swipeu (expo-haptics, samo native)
 - **Pinch-to-zoom** — Zoom na sliku članka
-
-### Content
-- **Višejezičnost** — Neka korisnik odabere jezik (HR/EN/DE/FR…) u settings tabu
-- **"Na današnji dan"** — Članci vezani uz današnji datum (`/api/rest_v1/feed/onthisday`)
-- **Related articles** — Nakon čitanja članka, predloži slične tematski
 
 ### Technical
 - **Backend / personalizacija** — Preporučivanje članaka na temelju povijesti čitanja

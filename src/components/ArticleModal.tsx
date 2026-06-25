@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { fetchFullArticle } from '../utils/wikipedia';
 import { WikiArticle } from '../types';
+import RelatedArticles from './RelatedArticles';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Props {
   article: WikiArticle | null;
@@ -19,41 +21,62 @@ interface Props {
 }
 
 export default function ArticleModal({ article, onClose }: Props) {
+  const { lang } = useLanguage();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
+  // Stack for navigating into related articles
+  const [stack, setStack] = useState<WikiArticle[]>([]);
+
+  const current = stack.length > 0 ? stack[stack.length - 1] : article;
 
   useEffect(() => {
-    if (!article) return;
+    if (!current) return;
     setText('');
     setLoading(true);
-    fetchFullArticle(article.title)
+    fetchFullArticle(current.title, lang)
       .then(setText)
-      .catch(() => setText(article.extract))
+      .catch(() => setText(current.extract))
       .finally(() => setLoading(false));
+  }, [current?.pageid, lang]);
+
+  // Reset stack when article changes from outside
+  useEffect(() => {
+    setStack([]);
   }, [article?.pageid]);
 
   if (!article) return null;
+
+  function handleSelectRelated(related: WikiArticle) {
+    setStack((prev) => [...prev, related]);
+  }
+
+  function handleBack() {
+    setStack((prev) => prev.slice(0, -1));
+  }
 
   return (
     <Modal
       visible={!!article}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={stack.length > 0 ? handleBack : onClose}
     >
       <View style={styles.container}>
-        {/* Handle bar */}
         <View style={styles.handle} />
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={2}>{article.title}</Text>
+          {stack.length > 0 && (
+            <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Text style={styles.backText}>←</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={styles.title} numberOfLines={2}>{current?.title}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Content */}
         {loading ? (
           <View style={styles.loader}>
             <ActivityIndicator color="#fff" />
@@ -64,15 +87,22 @@ export default function ArticleModal({ article, onClose }: Props) {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.body}>{text || article.extract}</Text>
+            <Text style={styles.body}>{text || current?.extract}</Text>
+
+            {current && (
+              <RelatedArticles
+                title={current.title}
+                lang={lang}
+                onSelect={handleSelectRelated}
+              />
+            )}
           </ScrollView>
         )}
 
-        {/* Footer */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.openBtn}
-            onPress={() => Linking.openURL(article.fullurl)}
+            onPress={() => current && Linking.openURL(current.fullurl)}
             activeOpacity={0.8}
           >
             <Text style={styles.openBtnText}>Otvori na Wikipediji →</Text>
@@ -102,14 +132,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 20,
     marginBottom: 16,
-    gap: 12,
+    gap: 10,
   },
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  backText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   title: {
     flex: 1,
     color: '#fff',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
-    lineHeight: 28,
+    lineHeight: 26,
   },
   closeBtn: {
     width: 32,
@@ -120,23 +160,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  closeText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  loader: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
+  closeText: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700' },
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
   body: {
     color: 'rgba(255,255,255,0.82)',
     fontSize: 16,
@@ -155,9 +182,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  openBtnText: {
-    color: '#0a0a0a',
-    fontSize: 15,
-    fontWeight: '700',
-  },
+  openBtnText: { color: '#0a0a0a', fontSize: 15, fontWeight: '700' },
 });

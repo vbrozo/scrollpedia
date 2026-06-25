@@ -1,10 +1,11 @@
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { LanguageProvider } from '../src/context/LanguageContext';
 
 export default function RootLayout() {
   return (
-    <>
+    <LanguageProvider>
       <StatusBar style="light" />
       <Tabs
         screenOptions={{
@@ -19,31 +20,32 @@ export default function RootLayout() {
           name="index"
           options={{
             title: 'Otkrij',
-            tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <TabIcon emoji="🌍" focused={focused} />
-            ),
+            tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🌍" focused={focused} />,
           }}
         />
         <Tabs.Screen
           name="search"
           options={{
             title: 'Pretraži',
-            tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <TabIcon emoji="🔍" focused={focused} />
-            ),
+            tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🔍" focused={focused} />,
           }}
         />
         <Tabs.Screen
           name="saved"
           options={{
             title: 'Saved',
-            tabBarIcon: ({ focused }: { focused: boolean }) => (
-              <TabIcon emoji="🔖" focused={focused} />
-            ),
+            tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="🔖" focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: 'Jezik',
+            tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon emoji="⚙️" focused={focused} />,
           }}
         />
       </Tabs>
-    </>
+    </LanguageProvider>
   );
 }
 
@@ -68,16 +70,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 25 : 8,
     paddingTop: 8,
   },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  iconWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconEmoji: {
-    fontSize: 20,
-  },
+  tabLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5 },
+  iconWrap: { alignItems: 'center', justifyContent: 'center' },
+  iconEmoji: { fontSize: 20 },
 });

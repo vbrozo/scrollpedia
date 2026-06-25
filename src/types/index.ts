@@ -9,4 +9,7 @@ export interface WikiArticle {
   };
   fullurl: string;
   isHighlight?: boolean;
+  isOnThisDay?: boolean;
+  onThisDayYear?: number;
+  onThisDayText?: string;
 }

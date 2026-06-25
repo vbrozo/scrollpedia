@@ -1,0 +1,189 @@
+import React from 'react';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ScrollView,
+} from 'react-native';
+import { LANGUAGES, useLanguage } from '../src/context/LanguageContext';
+
+export default function SettingsScreen() {
+  const { lang, setLang } = useLanguage();
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text style={styles.header}>Postavke</Text>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>JEZIK WIKIPEDIJE</Text>
+        <View style={styles.langList}>
+          {LANGUAGES.map((l) => {
+            const active = lang === l.code;
+            return (
+              <TouchableOpacity
+                key={l.code}
+                style={[styles.langRow, active && styles.langRowActive]}
+                onPress={() => setLang(l.code)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.langFlag}>{l.flag}</Text>
+                <View style={styles.langInfo}>
+                  <Text style={[styles.langNative, active && styles.langNativeActive]}>
+                    {l.nativeName}
+                  </Text>
+                  <Text style={styles.langLabel}>{l.label}</Text>
+                </View>
+                {active && (
+                  <View style={styles.checkWrap}>
+                    <Text style={styles.check}>✓</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={styles.hint}>
+          Mijenja jezik feed-a, pretraživanja, kategorija i "Na današnji dan" sekcije.
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>O APLIKACIJI</Text>
+        <View style={styles.infoBox}>
+          <InfoRow label="Verzija" value="1.0.0" />
+          <InfoRow label="Izvor podataka" value="Wikimedia Foundation" />
+          <InfoRow label="Licenca sadržaja" value="CC BY-SA 4.0" />
+        </View>
+        <Text style={styles.hint}>
+          Sav sadržaj preuzet je s Wikipedije i dostupan pod Creative Commons licencom.
+        </Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
+  content: {
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 120,
+  },
+  header: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    paddingHorizontal: 20,
+    marginBottom: 28,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionLabel: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  langList: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#1e1e1e',
+  },
+  langRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#141414',
+    gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e1e1e',
+  },
+  langRowActive: {
+    backgroundColor: '#1c1c1c',
+  },
+  langFlag: {
+    fontSize: 26,
+  },
+  langInfo: {
+    flex: 1,
+  },
+  langNative: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  langNativeActive: {
+    color: '#fff',
+  },
+  langLabel: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 12,
+    marginTop: 1,
+  },
+  checkWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  check: {
+    color: '#0a0a0a',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  hint: {
+    color: 'rgba(255,255,255,0.28)',
+    fontSize: 12,
+    lineHeight: 18,
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  infoBox: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#1e1e1e',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#141414',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e1e1e',
+  },
+  infoLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 14,
+  },
+  infoValue: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+});

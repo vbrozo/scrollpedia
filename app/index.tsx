@@ -11,86 +11,103 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useArticles } from '../src/hooks/useArticles';
+import { useLanguage } from '../src/context/LanguageContext';
 import ArticleCard from '../src/components/ArticleCard';
 import DailyHighlightCard from '../src/components/DailyHighlightCard';
+import OnThisDayCard from '../src/components/OnThisDayCard';
 import SkeletonCard from '../src/components/SkeletonCard';
 import OnboardingScreen from '../src/components/OnboardingScreen';
 import CategoryFilter from '../src/components/CategoryFilter';
 import ArticleModal from '../src/components/ArticleModal';
 import { WikiArticle } from '../src/types';
-import { fetchDailyHighlight } from '../src/utils/wikipedia';
+import { fetchDailyHighlight, fetchOnThisDay } from '../src/utils/wikipedia';
 
 const HIGHLIGHT_CACHE_KEY = 'scrollpedia_daily_highlight';
+const ONTHISDAY_CACHE_KEY = 'scrollpedia_onthisday';
 const ONBOARDING_KEY = 'scrollpedia_onboarding_done';
 const SKELETON_COUNT = 4;
 
-function todayCacheKey() {
+function todayCacheKey(lang: string) {
   const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  return `${lang}-${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
 export default function DiscoverScreen() {
   const { height: H } = useWindowDimensions();
+  const { lang } = useLanguage();
   const [category, setCategory] = useState<string | null>(null);
   const [modalArticle, setModalArticle] = useState<WikiArticle | null>(null);
   const [highlight, setHighlight] = useState<WikiArticle | null>(null);
+  const [onThisDay, setOnThisDay] = useState<WikiArticle | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
-  const { articles, loading, error, loadMore, reset } = useArticles(category);
+  const { articles, loading, error, loadMore, reset } = useArticles(category, lang);
   const flatListRef = useRef<FlatList<WikiArticle>>(null);
   const currentIndexRef = useRef(0);
-  const initialized = useRef(false);
+  const initialized = useRef<string>('');
 
-  // Register service worker on web
   useEffect(() => {
     if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.register('/scrollpedia/sw.js').catch(() => {});
     }
   }, []);
 
-  // Check onboarding + fetch highlight in parallel
+  // Onboarding check (once)
   useEffect(() => {
-    async function init() {
-      const [onboardingDone, cachedHighlight] = await Promise.all([
-        AsyncStorage.getItem(ONBOARDING_KEY),
-        AsyncStorage.getItem(HIGHLIGHT_CACHE_KEY),
+    AsyncStorage.getItem(ONBOARDING_KEY).then((done) => {
+      setShowOnboarding(!done);
+      setOnboardingChecked(true);
+    });
+  }, []);
+
+  // Fetch highlight + onthisday when lang changes, with per-lang cache
+  useEffect(() => {
+    const todayKey = todayCacheKey(lang);
+
+    async function loadSpecialCards() {
+      setHighlight(null);
+      setOnThisDay(null);
+
+      const [cachedH, cachedO] = await Promise.all([
+        AsyncStorage.getItem(`${HIGHLIGHT_CACHE_KEY}_${lang}`),
+        AsyncStorage.getItem(`${ONTHISDAY_CACHE_KEY}_${lang}`),
       ]);
 
-      setShowOnboarding(!onboardingDone);
-      setOnboardingChecked(true);
-
-      // Highlight: try cache first
-      const todayKey = todayCacheKey();
-      if (cachedHighlight) {
-        const { key, article } = JSON.parse(cachedHighlight);
-        if (key === todayKey) {
-          setHighlight(article);
-          return;
-        }
+      if (cachedH) {
+        const { key, article } = JSON.parse(cachedH);
+        if (key === todayKey) setHighlight(article);
       }
-      try {
-        const article = await fetchDailyHighlight();
-        if (article) {
-          setHighlight(article);
-          await AsyncStorage.setItem(HIGHLIGHT_CACHE_KEY, JSON.stringify({ key: todayKey, article }));
-        }
-      } catch {}
-    }
-    init();
-  }, []);
+      if (cachedO) {
+        const { key, article } = JSON.parse(cachedO);
+        if (key === todayKey) setOnThisDay(article);
+      }
 
-  // Initial article load
+      const [h, o] = await Promise.all([
+        fetchDailyHighlight(lang),
+        fetchOnThisDay(lang),
+      ]);
+      if (h) {
+        setHighlight(h);
+        await AsyncStorage.setItem(`${HIGHLIGHT_CACHE_KEY}_${lang}`, JSON.stringify({ key: todayKey, article: h }));
+      }
+      if (o) {
+        setOnThisDay(o);
+        await AsyncStorage.setItem(`${ONTHISDAY_CACHE_KEY}_${lang}`, JSON.stringify({ key: todayKey, article: o }));
+      }
+    }
+
+    loadSpecialCards();
+  }, [lang]);
+
+  // Reload articles when lang changes
   useEffect(() => {
-    if (!initialized.current) {
-      initialized.current = true;
-      loadMore();
-    }
-  }, []);
-
-  async function handleOnboardingDone() {
-    await AsyncStorage.setItem(ONBOARDING_KEY, '1');
-    setShowOnboarding(false);
-  }
+    const key = `${lang}-${category}`;
+    if (initialized.current === key) return;
+    initialized.current = key;
+    reset();
+    setCategory(null);
+    setTimeout(() => loadMore(), 0);
+  }, [lang]);
 
   const handleCategoryChange = useCallback(
     (value: string | null) => {
@@ -117,24 +134,35 @@ export default function DiscoverScreen() {
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
 
-  const feedData: WikiArticle[] =
-    category === null && highlight
-      ? [highlight, ...articles.filter((a) => a.pageid !== highlight.pageid)]
-      : articles;
+  async function handleOnboardingDone() {
+    await AsyncStorage.setItem(ONBOARDING_KEY, '1');
+    setShowOnboarding(false);
+  }
 
-  // Show skeletons while initial load is happening
+  // Build feed: highlight → onthisday → regular articles (deduplicated)
+  const specialIds = new Set([highlight?.pageid, onThisDay?.pageid].filter(Boolean) as number[]);
+  const regularArticles = articles.filter((a) => !specialIds.has(a.pageid));
+
+  const feedData: WikiArticle[] =
+    category === null
+      ? [
+          ...(highlight ? [highlight] : []),
+          ...(onThisDay ? [onThisDay] : []),
+          ...regularArticles,
+        ]
+      : regularArticles;
+
   const showSkeletons = loading && feedData.length === 0;
 
   function renderItem({ item }: { item: WikiArticle }) {
     if (item.isHighlight) {
       return <DailyHighlightCard article={item} onReadMore={() => setModalArticle(item)} />;
     }
+    if (item.isOnThisDay) {
+      return <OnThisDayCard article={item} onReadMore={() => setModalArticle(item)} />;
+    }
     return (
-      <ArticleCard
-        article={item}
-        onSkip={handleSkip}
-        onReadMore={() => setModalArticle(item)}
-      />
+      <ArticleCard article={item} onSkip={handleSkip} onReadMore={() => setModalArticle(item)} />
     );
   }
 
@@ -162,7 +190,6 @@ export default function DiscoverScreen() {
   return (
     <View style={styles.container}>
       {showSkeletons ? (
-        // Skeleton feed during initial load
         <FlatList
           data={Array.from({ length: SKELETON_COUNT }, (_, i) => i)}
           keyExtractor={(i) => `skel-${i}`}
@@ -181,7 +208,7 @@ export default function DiscoverScreen() {
           ref={flatListRef}
           data={feedData}
           renderItem={renderItem}
-          keyExtractor={(item) => `${item.isHighlight ? 'h' : ''}${item.pageid}`}
+          keyExtractor={(item) => `${item.isHighlight ? 'h' : item.isOnThisDay ? 'o' : ''}${item.pageid}`}
           pagingEnabled
           snapToInterval={H}
           snapToAlignment="start"
@@ -200,7 +227,7 @@ export default function DiscoverScreen() {
         />
       )}
 
-      <CategoryFilter selected={category} onSelect={handleCategoryChange} />
+      <CategoryFilter selected={category} onSelect={handleCategoryChange} lang={lang} />
       <ArticleModal article={modalArticle} onClose={() => setModalArticle(null)} />
 
       {onboardingChecked && showOnboarding && (

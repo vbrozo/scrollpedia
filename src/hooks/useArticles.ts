@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { WikiArticle } from '../types';
 import { fetchRandomArticles, fetchByCategory } from '../utils/wikipedia';
 
-export function useArticles(category: string | null = null) {
+export function useArticles(category: string | null = null, lang = 'hr') {
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,8 +15,8 @@ export function useArticles(category: string | null = null) {
     setError(null);
     try {
       const next = category
-        ? await fetchByCategory(category)
-        : await fetchRandomArticles();
+        ? await fetchByCategory(category, lang)
+        : await fetchRandomArticles(lang);
       setArticles((prev) => {
         const ids = new Set(prev.map((a) => a.pageid));
         return [...prev, ...next.filter((a) => !ids.has(a.pageid))];
@@ -27,7 +27,7 @@ export function useArticles(category: string | null = null) {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [category]);
+  }, [category, lang]);
 
   const reset = useCallback(() => {
     setArticles([]);
