@@ -8,10 +8,12 @@ export default function Root({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
 
         {/* Eruda — in-app mobile devtools (Console / Network / Elements).
-            Dev-phase debugging aid; floating button appears in the corner.
+            Only loads when the URL has ?debug — keeps it out of normal use.
+            Open with: https://vbrozo.github.io/scrollpedia/?debug
             Captures errors that fire before it loads via a pending queue. */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
+            if (!/[?&]debug\\b/.test(location.search)) return;
             window.__earlyErrors = [];
             window.addEventListener('error', function(e){
               window.__earlyErrors.push('[error] ' + (e.message || e) + (e.filename ? ' @ ' + e.filename + ':' + e.lineno : ''));
@@ -19,18 +21,15 @@ export default function Root({ children }: PropsWithChildren) {
             window.addEventListener('unhandledrejection', function(e){
               window.__earlyErrors.push('[promise] ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
             });
-          })();
-        `}} />
-        <script src="https://cdn.jsdelivr.net/npm/eruda@3" />
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function(){
-            function boot(){
-              if (typeof eruda === 'undefined') { setTimeout(boot, 200); return; }
-              eruda.init();
-              // Replay any errors captured before eruda was ready
-              (window.__earlyErrors || []).forEach(function(m){ console.error(m); });
-            }
-            boot();
+            var s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/eruda@3';
+            s.onload = function(){
+              if (typeof eruda !== 'undefined') {
+                eruda.init();
+                (window.__earlyErrors || []).forEach(function(m){ console.error(m); });
+              }
+            };
+            document.head.appendChild(s);
           })();
         `}} />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />

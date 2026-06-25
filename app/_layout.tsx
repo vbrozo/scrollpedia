@@ -2,13 +2,16 @@ import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { LanguageProvider, useLanguage } from '../src/context/LanguageContext';
+import { SavedProvider } from '../src/context/SavedContext';
 import { getStrings } from '../src/utils/i18n';
 
 export default function RootLayout() {
   return (
     <LanguageProvider>
-      <StatusBar style="light" />
-      <AppTabs />
+      <SavedProvider>
+        <StatusBar style="light" />
+        <AppTabs />
+      </SavedProvider>
     </LanguageProvider>
   );
 }

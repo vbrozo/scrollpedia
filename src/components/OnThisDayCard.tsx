@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   Image,
   Linking,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
-import { isArticleSaved, saveArticle, unsaveArticle } from '../utils/storage';
+import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
 
@@ -40,16 +40,12 @@ export default function OnThisDayCard({ article, onReadMore }: Props) {
   const { width: W, height: H } = useWindowDimensions();
   const { lang } = useLanguage();
   const t = getStrings(lang);
-  const [saved, setSaved] = useState(false);
+  const { isSaved, toggle } = useSaved();
+  const saved = isSaved(article);
   const isWeb = Platform.OS === 'web';
 
-  useEffect(() => {
-    isArticleSaved(article).then(setSaved);
-  }, [article]);
-
-  async function toggleSave() {
-    if (saved) { await unsaveArticle(article); setSaved(false); }
-    else { await saveArticle(article); setSaved(true); }
+  function toggleSave() {
+    toggle(article);
   }
 
   const truncated =

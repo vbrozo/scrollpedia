@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import {
   FlatList,
   Platform,
@@ -6,28 +6,20 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { getArticleKey, getSaved, unsaveArticle } from '../src/utils/storage';
+import { getArticleKey } from '../src/utils/storage';
 import SavedCard from '../src/components/SavedCard';
 import { WikiArticle } from '../src/types';
 import { useLanguage } from '../src/context/LanguageContext';
+import { useSaved } from '../src/context/SavedContext';
 import { getStrings } from '../src/utils/i18n';
 
 export default function SavedScreen() {
   const { lang } = useLanguage();
   const t = getStrings(lang);
-  const [articles, setArticles] = useState<WikiArticle[]>([]);
+  const { saved: articles, unsave } = useSaved();
 
-  useFocusEffect(
-    useCallback(() => {
-      getSaved().then(setArticles);
-    }, [])
-  );
-
-  async function handleRemove(article: WikiArticle) {
-    await unsaveArticle(article);
-    const key = getArticleKey(article);
-    setArticles((prev) => prev.filter((a) => getArticleKey(a) !== key));
+  function handleRemove(article: WikiArticle) {
+    unsave(article);
   }
 
   if (articles.length === 0) {

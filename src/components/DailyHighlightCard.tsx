@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
-import { isArticleSaved, saveArticle, unsaveArticle } from '../utils/storage';
+import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
 
@@ -35,11 +35,11 @@ export default function DailyHighlightCard({ article, onReadMore }: Props) {
   const { width: W, height: H } = useWindowDimensions();
   const { lang } = useLanguage();
   const t = getStrings(lang);
-  const [saved, setSaved] = useState(false);
+  const { isSaved, toggle } = useSaved();
+  const saved = isSaved(article);
   const shimmer = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    isArticleSaved(article).then(setSaved);
     // Subtle shimmer on the gold badge
     Animated.loop(
       Animated.sequence([
@@ -47,11 +47,10 @@ export default function DailyHighlightCard({ article, onReadMore }: Props) {
         Animated.timing(shimmer, { toValue: 0, duration: 1800, useNativeDriver: true }),
       ])
     ).start();
-  }, [article, shimmer]);
+  }, [shimmer]);
 
-  async function toggleSave() {
-    if (saved) { await unsaveArticle(article); setSaved(false); }
-    else { await saveArticle(article); setSaved(true); }
+  function toggleSave() {
+    toggle(article);
   }
 
   const truncated =

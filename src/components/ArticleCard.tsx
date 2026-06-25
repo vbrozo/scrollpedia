@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
-import { isArticleSaved, saveArticle, unsaveArticle } from '../utils/storage';
+import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
 
@@ -30,29 +30,23 @@ export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
   const { width: W, height: H } = useWindowDimensions();
   const { lang } = useLanguage();
   const t = getStrings(lang);
-  const [saved, setSaved] = useState(false);
+  const { isSaved, save, toggle } = useSaved();
+  const saved = isSaved(article);
   const [swipeLabel, setSwipeLabel] = useState<'SAVE' | 'SKIP' | null>(null);
   const swipeX = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    isArticleSaved(article).then(setSaved);
-  }, [article]);
+  // Keep latest article reference for the PanResponder (created once)
+  const articleRef = useRef(article);
+  articleRef.current = article;
+  const saveRef = useRef(save);
+  saveRef.current = save;
 
-  async function triggerSave() {
-    if (!saved) {
-      await saveArticle(article);
-      setSaved(true);
-    }
+  function triggerSave() {
+    saveRef.current(articleRef.current);
   }
 
-  async function toggleSave() {
-    if (saved) {
-      await unsaveArticle(article);
-      setSaved(false);
-    } else {
-      await saveArticle(article);
-      setSaved(true);
-    }
+  function toggleSave() {
+    toggle(article);
   }
 
   async function handleShare() {

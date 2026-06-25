@@ -14,11 +14,12 @@ import { useLanguage } from '../src/context/LanguageContext';
 import { WikiArticle } from '../src/types';
 import SavedCard from '../src/components/SavedCard';
 import ArticleModal from '../src/components/ArticleModal';
-import { unsaveArticle } from '../src/utils/storage';
+import { useSaved } from '../src/context/SavedContext';
 import { getStrings } from '../src/utils/i18n';
 
 export default function SearchScreen() {
   const { lang } = useLanguage();
+  const { unsave } = useSaved();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<WikiArticle[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,7 @@ export default function SearchScreen() {
   }, [handleSearch]);
 
   function handleRemove(article: WikiArticle) {
-    unsaveArticle(article);
+    unsave(article);
   }
 
   return (
