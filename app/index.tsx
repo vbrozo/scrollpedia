@@ -164,7 +164,10 @@ export default function DiscoverScreen() {
     feedLengthRef.current = feedData.length;
   }, [feedData.length]);
 
-  const showSkeletons = loading && feedData.length === 0;
+  // Show skeletons whenever the feed has no content yet and there's no error —
+  // not just while `loading` is true. This avoids a black gap between the React
+  // shell mounting (HTML splash removed) and the first data/onboarding appearing.
+  const showSkeletons = feedData.length === 0 && !error;
 
   function renderItem({ item }: { item: WikiArticle }) {
     if (item.isHighlight) {
