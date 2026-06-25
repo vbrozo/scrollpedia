@@ -1,4 +1,5 @@
 import { WikiArticle } from '../types';
+import { getStrings } from './i18n';
 
 // ─── Category names per language ───────────────────────────────────────────
 const CATEGORY_MAP: Record<string, Record<string, string>> = {
@@ -61,7 +62,7 @@ const CATEGORY_MAP: Record<string, Record<string, string>> = {
 export function getCategoriesForLang(lang: string) {
   const map = CATEGORY_MAP[lang] ?? CATEGORY_MAP.en;
   return [
-    { label: lang === 'hr' ? 'Sve' : 'All', value: null },
+    { label: getStrings(lang).all, value: null },
     ...Object.entries(map).map(([label, value]) => ({ label, value })),
   ];
 }
@@ -89,6 +90,7 @@ function processPages(pages: Record<string, any>, lang: string): WikiArticle[] {
     .filter((p: any) => p.extract && p.extract.trim().length > 50)
     .map((p: any) => ({
       pageid: p.pageid,
+      lang,
       title: p.title,
       extract: p.extract ?? '',
       thumbnail: p.thumbnail,
@@ -153,6 +155,7 @@ export async function fetchDailyHighlight(lang = 'hr'): Promise<WikiArticle | nu
       if (!tfa?.title || !tfa?.extract) continue;
       return {
         pageid: tfa.pageid ?? -1,
+        lang: l,
         title: tfa.title,
         extract: tfa.extract,
         thumbnail: tfa.thumbnail,
@@ -185,6 +188,7 @@ export async function fetchOnThisDay(lang = 'hr'): Promise<WikiArticle | null> {
       if (!page) continue;
       return {
         pageid: page.pageid ?? -2,
+        lang: l,
         title: page.title,
         extract: page.extract ?? event.text ?? '',
         thumbnail: page.thumbnail,
@@ -208,6 +212,7 @@ export async function fetchRelatedArticles(title: string, lang = 'hr'): Promise<
     const pages: any[] = data?.pages ?? [];
     return pages.slice(0, 10).map((p) => ({
       pageid: p.pageid ?? Math.random(),
+      lang,
       title: p.title,
       extract: p.extract ?? '',
       thumbnail: p.thumbnail,

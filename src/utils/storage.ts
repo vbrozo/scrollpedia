@@ -3,6 +3,11 @@ import { WikiArticle } from '../types';
 
 const KEY = 'scrollpedia_saved';
 
+export function getArticleKey(article: Pick<WikiArticle, 'pageid' | 'lang' | 'fullurl'>): string {
+  const urlLang = article.fullurl.match(/^https:\/\/([a-z-]+)\.wikipedia\.org\//)?.[1];
+  return `${article.lang ?? urlLang ?? 'hr'}:${article.pageid}`;
+}
+
 export async function getSaved(): Promise<WikiArticle[]> {
   const raw = await AsyncStorage.getItem(KEY);
   return raw ? JSON.parse(raw) : [];
@@ -10,16 +15,19 @@ export async function getSaved(): Promise<WikiArticle[]> {
 
 export async function saveArticle(article: WikiArticle): Promise<void> {
   const current = await getSaved();
-  if (current.find((a) => a.pageid === article.pageid)) return;
+  const key = getArticleKey(article);
+  if (current.find((a) => getArticleKey(a) === key)) return;
   await AsyncStorage.setItem(KEY, JSON.stringify([article, ...current]));
 }
 
-export async function unsaveArticle(pageid: number): Promise<void> {
+export async function unsaveArticle(article: WikiArticle): Promise<void> {
   const current = await getSaved();
-  await AsyncStorage.setItem(KEY, JSON.stringify(current.filter((a) => a.pageid !== pageid)));
+  const key = getArticleKey(article);
+  await AsyncStorage.setItem(KEY, JSON.stringify(current.filter((a) => getArticleKey(a) !== key)));
 }
 
-export async function isArticleSaved(pageid: number): Promise<boolean> {
+export async function isArticleSaved(article: WikiArticle): Promise<boolean> {
   const current = await getSaved();
-  return current.some((a) => a.pageid === pageid);
+  const key = getArticleKey(article);
+  return current.some((a) => getArticleKey(a) === key);
 }

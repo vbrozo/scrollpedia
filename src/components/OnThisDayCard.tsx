@@ -13,6 +13,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
 import { isArticleSaved, saveArticle, unsaveArticle } from '../utils/storage';
+import { useLanguage } from '../context/LanguageContext';
+import { getStrings } from '../utils/i18n';
 
 interface Props {
   article: WikiArticle;
@@ -36,15 +38,17 @@ function todayFormatted(lang: string) {
 
 export default function OnThisDayCard({ article, onReadMore }: Props) {
   const { width: W, height: H } = useWindowDimensions();
+  const { lang } = useLanguage();
+  const t = getStrings(lang);
   const [saved, setSaved] = useState(false);
   const isWeb = Platform.OS === 'web';
 
   useEffect(() => {
-    isArticleSaved(article.pageid).then(setSaved);
-  }, [article.pageid]);
+    isArticleSaved(article).then(setSaved);
+  }, [article]);
 
   async function toggleSave() {
-    if (saved) { await unsaveArticle(article.pageid); setSaved(false); }
+    if (saved) { await unsaveArticle(article); setSaved(false); }
     else { await saveArticle(article); setSaved(true); }
   }
 
@@ -74,10 +78,10 @@ export default function OnThisDayCard({ article, onReadMore }: Props) {
       <View style={[styles.topRow, { top: isWeb ? 24 : Platform.OS === 'ios' ? 60 : 40 }]}>
         <View style={styles.badge}>
           <Text style={styles.badgeIcon}>📅</Text>
-          <Text style={styles.badgeText}>NA DANAŠNJI DAN</Text>
+          <Text style={styles.badgeText}>{t.onThisDay}</Text>
         </View>
         <View style={styles.dateChip}>
-          <Text style={styles.dateText}>{todayFormatted('hr')}</Text>
+          <Text style={styles.dateText}>{todayFormatted(lang)}</Text>
         </View>
       </View>
 
@@ -99,14 +103,14 @@ export default function OnThisDayCard({ article, onReadMore }: Props) {
           <Text style={styles.title} numberOfLines={2}>{article.title}</Text>
           {truncated ? <Text style={styles.extract}>{truncated}</Text> : null}
           <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
-            <Text style={styles.readMoreText}>Čitaj više →</Text>
+            <Text style={styles.readMoreText}>{t.readMore} →</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.actions}>
-          <ActionButton emoji={saved ? '🔖' : '🏷️'} label={saved ? 'Saved' : 'Save'} onPress={toggleSave} active={saved} />
-          <ActionButton emoji="↗️" label="Dijeli" onPress={() => Share.share({ title: article.title, url: article.fullurl, message: article.fullurl })} />
-          <ActionButton emoji="🌐" label="Otvori" onPress={() => Linking.openURL(article.fullurl)} />
+          <ActionButton emoji={saved ? '🔖' : '🏷️'} label={saved ? t.saved : t.save} onPress={toggleSave} active={saved} />
+          <ActionButton emoji="↗️" label={t.share} onPress={() => Share.share({ title: article.title, url: article.fullurl, message: article.fullurl })} />
+          <ActionButton emoji="🌐" label={t.open} onPress={() => Linking.openURL(article.fullurl)} />
         </View>
       </View>
     </View>

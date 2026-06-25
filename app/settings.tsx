@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LANGUAGES, useLanguage } from '../src/context/LanguageContext';
+import { getStrings } from '../src/utils/i18n';
 
 export default function SettingsScreen() {
   const { lang, setLang } = useLanguage();
+  const t = getStrings(lang);
   const [clearing, setClearing] = useState(false);
   const [cleared, setCleared] = useState(false);
 
@@ -36,10 +38,10 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.header}>Postavke</Text>
+      <Text style={styles.header}>{t.settingsHeader}</Text>
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>JEZIK WIKIPEDIJE</Text>
+        <Text style={styles.sectionLabel}>{t.languageSection}</Text>
         <View style={styles.langList}>
           {LANGUAGES.map((l) => {
             const active = lang === l.code;
@@ -67,12 +69,12 @@ export default function SettingsScreen() {
           })}
         </View>
         <Text style={styles.hint}>
-          Mijenja jezik feed-a, pretraživanja, kategorija i "Na današnji dan" sekcije.
+          {t.languageHint}
         </Text>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>RAZVOJNE OPCIJE</Text>
+        <Text style={styles.sectionLabel}>{t.developmentOptions}</Text>
         <TouchableOpacity
           style={[styles.clearBtn, cleared && styles.clearBtnDone]}
           onPress={handleClearCache}
@@ -82,24 +84,24 @@ export default function SettingsScreen() {
           <Text style={styles.clearBtnEmoji}>{cleared ? '✓' : '🗑️'}</Text>
           <View style={styles.clearBtnInfo}>
             <Text style={[styles.clearBtnTitle, cleared && styles.clearBtnTitleDone]}>
-              {cleared ? 'Cache očišćen!' : clearing ? 'Čišćenje…' : 'Očisti cache'}
+              {cleared ? t.cacheCleared : clearing ? t.clearing : t.clearCache}
             </Text>
             <Text style={styles.clearBtnSub}>
-              Briše cached Daily Highlight, Na današnji dan i onboarding flag
+              {t.clearCacheSubtitle}
             </Text>
           </View>
         </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>O APLIKACIJI</Text>
+        <Text style={styles.sectionLabel}>{t.aboutApp}</Text>
         <View style={styles.infoBox}>
-          <InfoRow label="Verzija" value="1.0.0" />
-          <InfoRow label="Izvor podataka" value="Wikimedia Foundation" />
-          <InfoRow label="Licenca sadržaja" value="CC BY-SA 4.0" />
+          <InfoRow label={t.version} value="1.0.0" />
+          <InfoRow label={t.dataSource} value="Wikimedia Foundation" />
+          <InfoRow label={t.contentLicense} value="CC BY-SA 4.0" />
         </View>
         <Text style={styles.hint}>
-          Sav sadržaj preuzet je s Wikipedije i dostupan pod Creative Commons licencom.
+          {t.licenseHint}
         </Text>
       </View>
     </ScrollView>

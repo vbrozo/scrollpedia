@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,7 +14,8 @@ import { useLanguage } from '../src/context/LanguageContext';
 import { WikiArticle } from '../src/types';
 import SavedCard from '../src/components/SavedCard';
 import ArticleModal from '../src/components/ArticleModal';
-import { saveArticle, unsaveArticle } from '../src/utils/storage';
+import { unsaveArticle } from '../src/utils/storage';
+import { getStrings } from '../src/utils/i18n';
 
 export default function SearchScreen() {
   const { lang } = useLanguage();
@@ -24,38 +25,48 @@ export default function SearchScreen() {
   const [searched, setSearched] = useState(false);
   const [modalArticle, setModalArticle] = useState<WikiArticle | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestRef = useRef(0);
+  const t = getStrings(lang);
 
   const handleSearch = useCallback((text: string) => {
     setQuery(text);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!text.trim()) { setResults([]); setSearched(false); return; }
+    const requestId = ++requestRef.current;
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       setSearched(true);
       try {
         const res = await searchArticles(text, lang);
-        setResults(res);
+        if (requestRef.current === requestId) setResults(res);
       } catch {
-        setResults([]);
+        if (requestRef.current === requestId) setResults([]);
       } finally {
-        setLoading(false);
+        if (requestRef.current === requestId) setLoading(false);
       }
     }, 400);
-  }, []);
+  }, [lang]);
 
-  function handleRemove(pageid: number) {
-    unsaveArticle(pageid);
+  useEffect(() => {
+    if (query.trim()) handleSearch(query);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [handleSearch]);
+
+  function handleRemove(article: WikiArticle) {
+    unsaveArticle(article);
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Pretraži</Text>
+      <Text style={styles.header}>{t.searchHeader}</Text>
 
       <View style={styles.inputWrapper}>
         <Text style={styles.inputIcon}>🔍</Text>
         <TextInput
           style={styles.input}
-          placeholder="Pretraži Wikipedia…"
+          placeholder={t.searchPlaceholder}
           placeholderTextColor="rgba(255,255,255,0.3)"
           value={query}
           onChangeText={handleSearch}
@@ -80,14 +91,14 @@ export default function SearchScreen() {
       {!loading && searched && results.length === 0 && (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>🔎</Text>
-          <Text style={styles.emptyText}>Nema rezultata za "{query}"</Text>
+          <Text style={styles.emptyText}>{t.searchNoResults(query)}</Text>
         </View>
       )}
 
       {!loading && !searched && (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>🌍</Text>
-          <Text style={styles.emptyText}>Pretraži bilo koji pojam na hrvatskoj Wikipediji</Text>
+          <Text style={styles.emptyText}>{t.searchEmpty}</Text>
         </View>
       )}
 

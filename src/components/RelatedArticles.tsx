@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
 import { fetchRelatedArticles } from '../utils/wikipedia';
+import { getStrings } from '../utils/i18n';
 
 interface Props {
   title: string;
@@ -21,6 +22,7 @@ interface Props {
 export default function RelatedArticles({ title, lang, onSelect }: Props) {
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [loading, setLoading] = useState(true);
+  const t = getStrings(lang);
 
   useEffect(() => {
     setArticles([]);
@@ -42,7 +44,7 @@ export default function RelatedArticles({ title, lang, onSelect }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Slični članci</Text>
+      <Text style={styles.heading}>{t.relatedArticles}</Text>
       <FlatList
         data={articles}
         keyExtractor={(item) => String(item.pageid)}
