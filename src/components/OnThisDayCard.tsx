@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Image,
   Linking,
   Platform,
   Share,
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
+import ArticleImage from './ArticleImage';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
@@ -53,15 +53,12 @@ export default function OnThisDayCard({ article, onReadMore }: Props) {
 
   return (
     <View style={[styles.card, { width: W, height: H }]}>
-      {article.thumbnail ? (
-        <Image
-          source={{ uri: article.thumbnail.source }}
-          style={[StyleSheet.absoluteFill, { width: W, height: H }]}
-          resizeMode="cover"
-        />
-      ) : (
-        <LinearGradient colors={['#06001f', '#0d0533', '#120a45']} style={StyleSheet.absoluteFill} />
-      )}
+      <ArticleImage
+        uri={article.thumbnail?.source}
+        width={W}
+        height={H}
+        fallbackColors={['#06001f', '#0d0533', '#120a45']}
+      />
 
       {/* Deep purple overlay */}
       <LinearGradient

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Animated,
-  Image,
   Linking,
   Platform,
   Share,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
+import ArticleImage from './ArticleImage';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
@@ -61,18 +61,12 @@ export default function DailyHighlightCard({ article, onReadMore }: Props) {
 
   return (
     <View style={[styles.card, { width: W, height: H }]}>
-      {article.thumbnail ? (
-        <Image
-          source={{ uri: article.thumbnail.source }}
-          style={[StyleSheet.absoluteFill, { width: W, height: H }]}
-          resizeMode="cover"
-        />
-      ) : (
-        <LinearGradient
-          colors={['#2d1b00', '#5c3500', '#8b5a00']}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
+      <ArticleImage
+        uri={article.thumbnail?.source}
+        width={W}
+        height={H}
+        fallbackColors={['#2d1b00', '#5c3500', '#8b5a00']}
+      />
 
       {/* Warm amber gradient overlay */}
       <LinearGradient

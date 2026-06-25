@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
   Animated,
-  Image,
   Linking,
   PanResponder,
   Platform,
@@ -14,6 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
+import ArticleImage from './ArticleImage';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
@@ -107,18 +107,7 @@ export default function ArticleCard({ article, onSkip, onReadMore }: Props) {
       style={[styles.card, { width: W, height: H }, { transform: [{ translateX: swipeX }, { rotate }] }]}
       {...(isWeb ? {} : panResponder.panHandlers)}
     >
-      {article.thumbnail ? (
-        <Image
-          source={{ uri: article.thumbnail.source }}
-          style={[StyleSheet.absoluteFill, { width: W, height: H }]}
-          resizeMode="cover"
-        />
-      ) : (
-        <LinearGradient
-          colors={['#1a1a2e', '#16213e', '#0f3460']}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
+      <ArticleImage uri={article.thumbnail?.source} width={W} height={H} />
 
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.93)']}
