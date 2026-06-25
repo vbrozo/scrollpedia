@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Platform,
   StyleSheet,
@@ -6,11 +6,33 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LANGUAGES, useLanguage } from '../src/context/LanguageContext';
 
 export default function SettingsScreen() {
   const { lang, setLang } = useLanguage();
+  const [clearing, setClearing] = useState(false);
+  const [cleared, setCleared] = useState(false);
+
+  async function handleClearCache() {
+    setClearing(true);
+    setCleared(false);
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const cacheKeys = keys.filter((k) =>
+        k.startsWith('scrollpedia_daily_highlight') ||
+        k.startsWith('scrollpedia_onthisday') ||
+        k === 'scrollpedia_onboarding_done'
+      );
+      await AsyncStorage.multiRemove(cacheKeys);
+      setCleared(true);
+      setTimeout(() => setCleared(false), 2500);
+    } finally {
+      setClearing(false);
+    }
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -47,6 +69,26 @@ export default function SettingsScreen() {
         <Text style={styles.hint}>
           Mijenja jezik feed-a, pretraživanja, kategorija i "Na današnji dan" sekcije.
         </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>RAZVOJNE OPCIJE</Text>
+        <TouchableOpacity
+          style={[styles.clearBtn, cleared && styles.clearBtnDone]}
+          onPress={handleClearCache}
+          activeOpacity={0.75}
+          disabled={clearing}
+        >
+          <Text style={styles.clearBtnEmoji}>{cleared ? '✓' : '🗑️'}</Text>
+          <View style={styles.clearBtnInfo}>
+            <Text style={[styles.clearBtnTitle, cleared && styles.clearBtnTitleDone]}>
+              {cleared ? 'Cache očišćen!' : clearing ? 'Čišćenje…' : 'Očisti cache'}
+            </Text>
+            <Text style={styles.clearBtnSub}>
+              Briše cached Daily Highlight, Na današnji dan i onboarding flag
+            </Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -185,5 +227,43 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  clearBtn: {
+    marginHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  clearBtnDone: {
+    backgroundColor: '#0d1f0d',
+    borderColor: '#1e3a1e',
+  },
+  clearBtnEmoji: {
+    fontSize: 22,
+    width: 30,
+    textAlign: 'center',
+  },
+  clearBtnInfo: {
+    flex: 1,
+  },
+  clearBtnTitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  clearBtnTitleDone: {
+    color: '#4caf50',
+  },
+  clearBtnSub: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 17,
   },
 });
