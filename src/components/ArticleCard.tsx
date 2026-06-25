@@ -52,7 +52,11 @@ export default function ArticleCard({ article }: Props) {
   return (
     <View style={styles.card}>
       {article.thumbnail ? (
-        <Image source={{ uri: article.thumbnail.source }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image
+          source={{ uri: article.thumbnail.source }}
+          style={[StyleSheet.absoluteFill, { width: W, height: H }]}
+          resizeMode="cover"
+        />
       ) : (
         <LinearGradient
           colors={['#1a1a2e', '#16213e', '#0f3460']}
