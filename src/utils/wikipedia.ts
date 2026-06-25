@@ -145,26 +145,26 @@ export async function fetchDailyHighlight(lang = 'hr'): Promise<WikiArticle | nu
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
 
-  const langs = lang === 'hr' ? ['hr', 'en'] : [lang, 'en'];
-  for (const l of langs) {
-    try {
-      const res = await fetchWithTimeout(`https://${l}.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${d}`);
-      if (!res.ok) continue;
-      const data = await res.json();
-      const tfa = data?.tfa;
-      if (!tfa?.title || !tfa?.extract) continue;
-      return {
-        pageid: tfa.pageid ?? -1,
-        lang: l,
-        title: tfa.title,
-        extract: tfa.extract,
-        thumbnail: tfa.thumbnail,
-        fullurl: tfa.content_urls?.desktop?.page ?? `https://${l}.wikipedia.org/wiki/${encodeURIComponent(tfa.title)}`,
-        isHighlight: true,
-      };
-    } catch { continue; }
+  // Only the requested language — no EN fallback. If there's no featured
+  // article for today (or it lacks an image), show none; the random feed fills in.
+  try {
+    const res = await fetchWithTimeout(`https://${lang}.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${d}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const tfa = data?.tfa;
+    if (!tfa?.title || !tfa?.extract || !tfa?.thumbnail?.source) return null;
+    return {
+      pageid: tfa.pageid ?? -1,
+      lang,
+      title: tfa.title,
+      extract: tfa.extract,
+      thumbnail: tfa.thumbnail,
+      fullurl: tfa.content_urls?.desktop?.page ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(tfa.title)}`,
+      isHighlight: true,
+    };
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export async function fetchOnThisDay(lang = 'hr'): Promise<WikiArticle | null> {
@@ -172,34 +172,31 @@ export async function fetchOnThisDay(lang = 'hr'): Promise<WikiArticle | null> {
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
 
-  // EN has the most complete onthisday data; use it as primary for non-EN langs
-  const primary = ['en', 'hr', 'de', 'fr', 'es'].includes(lang) ? lang : 'en';
-  const candidates = primary === 'en' ? ['en'] : [primary, 'en'];
-
-  for (const l of candidates) {
-    try {
-      const res = await fetchWithTimeout(`https://${l}.wikipedia.org/api/rest_v1/feed/onthisday/selected/${m}/${d}`);
-      if (!res.ok) continue;
-      const data = await res.json();
-      const events: any[] = data?.selected ?? [];
-      const event = events.find((e) => e.pages?.some((p: any) => p.thumbnail));
-      if (!event) continue;
-      const page = event.pages.find((p: any) => p.thumbnail) ?? event.pages[0];
-      if (!page) continue;
-      return {
-        pageid: page.pageid ?? -2,
-        lang: l,
-        title: page.title,
-        extract: page.extract ?? event.text ?? '',
-        thumbnail: page.thumbnail,
-        fullurl: page.content_urls?.desktop?.page ?? `https://${l}.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
-        isOnThisDay: true,
-        onThisDayYear: event.year,
-        onThisDayText: event.text,
-      } as WikiArticle;
-    } catch { continue; }
+  // Only the requested language — no EN fallback. If there's no event with an
+  // image for today, show none; the random feed fills in.
+  try {
+    const res = await fetchWithTimeout(`https://${lang}.wikipedia.org/api/rest_v1/feed/onthisday/selected/${m}/${d}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const events: any[] = data?.selected ?? [];
+    const event = events.find((e) => e.pages?.some((p: any) => p.thumbnail));
+    if (!event) return null;
+    const page = event.pages.find((p: any) => p.thumbnail);
+    if (!page) return null;
+    return {
+      pageid: page.pageid ?? -2,
+      lang,
+      title: page.title,
+      extract: page.extract ?? event.text ?? '',
+      thumbnail: page.thumbnail,
+      fullurl: page.content_urls?.desktop?.page ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(page.title)}`,
+      isOnThisDay: true,
+      onThisDayYear: event.year,
+      onThisDayText: event.text,
+    } as WikiArticle;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export async function fetchRelatedArticles(title: string, lang = 'hr'): Promise<WikiArticle[]> {
