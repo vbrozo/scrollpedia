@@ -8,4 +8,5 @@ export interface WikiArticle {
     height: number;
   };
   fullurl: string;
+  isHighlight?: boolean;
 }

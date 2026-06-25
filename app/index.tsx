@@ -9,27 +9,31 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useArticles } from '../src/hooks/useArticles';
 import ArticleCard from '../src/components/ArticleCard';
+import DailyHighlightCard from '../src/components/DailyHighlightCard';
 import CategoryFilter from '../src/components/CategoryFilter';
 import ArticleModal from '../src/components/ArticleModal';
 import { WikiArticle } from '../src/types';
+import { fetchDailyHighlight } from '../src/utils/wikipedia';
+
+const HIGHLIGHT_CACHE_KEY = 'scrollpedia_daily_highlight';
+
+function todayCacheKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
 
 export default function DiscoverScreen() {
   const { height: H } = useWindowDimensions();
   const [category, setCategory] = useState<string | null>(null);
   const [modalArticle, setModalArticle] = useState<WikiArticle | null>(null);
+  const [highlight, setHighlight] = useState<WikiArticle | null>(null);
   const { articles, loading, error, loadMore, reset } = useArticles(category);
   const flatListRef = useRef<FlatList<WikiArticle>>(null);
   const currentIndexRef = useRef(0);
   const initialized = useRef(false);
-
-  useEffect(() => {
-    if (!initialized.current) {
-      initialized.current = true;
-      loadMore();
-    }
-  }, []);
 
   // Register service worker on web
   useEffect(() => {
@@ -38,7 +42,34 @@ export default function DiscoverScreen() {
     }
   }, []);
 
-  // When category changes, reset and reload
+  // Fetch daily highlight once, cache by date
+  useEffect(() => {
+    async function loadHighlight() {
+      const todayKey = todayCacheKey();
+      try {
+        const cached = await AsyncStorage.getItem(HIGHLIGHT_CACHE_KEY);
+        if (cached) {
+          const { key, article } = JSON.parse(cached);
+          if (key === todayKey) { setHighlight(article); return; }
+        }
+        const article = await fetchDailyHighlight();
+        if (article) {
+          setHighlight(article);
+          await AsyncStorage.setItem(HIGHLIGHT_CACHE_KEY, JSON.stringify({ key: todayKey, article }));
+        }
+      } catch {}
+    }
+    loadHighlight();
+  }, []);
+
+  // Initial article load
+  useEffect(() => {
+    if (!initialized.current) {
+      initialized.current = true;
+      loadMore();
+    }
+  }, []);
+
   const handleCategoryChange = useCallback(
     (value: string | null) => {
       setCategory(value);
@@ -51,23 +82,33 @@ export default function DiscoverScreen() {
 
   const handleSkip = useCallback(() => {
     const next = currentIndexRef.current + 1;
-    if (next < articles.length) {
+    if (next < feedData.length) {
       flatListRef.current?.scrollToIndex({ index: next, animated: true });
     }
-  }, [articles.length]);
+  }, []);
 
-  const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: any) => {
-      if (viewableItems.length > 0) {
-        currentIndexRef.current = viewableItems[0].index ?? 0;
-      }
-    },
-    []
-  );
+  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      currentIndexRef.current = viewableItems[0].index ?? 0;
+    }
+  }, []);
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
 
+  // Prepend highlight only when showing "Sve" (no category filter)
+  const feedData: WikiArticle[] = category === null && highlight
+    ? [highlight, ...articles.filter((a) => a.pageid !== highlight.pageid)]
+    : articles;
+
   function renderItem({ item }: { item: WikiArticle }) {
+    if (item.isHighlight) {
+      return (
+        <DailyHighlightCard
+          article={item}
+          onReadMore={() => setModalArticle(item)}
+        />
+      );
+    }
     return (
       <ArticleCard
         article={item}
@@ -86,7 +127,7 @@ export default function DiscoverScreen() {
     );
   }
 
-  if (error && articles.length === 0) {
+  if (error && feedData.length === 0) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorEmoji}>⚠️</Text>
@@ -98,7 +139,7 @@ export default function DiscoverScreen() {
     );
   }
 
-  if (articles.length === 0 && loading) {
+  if (feedData.length === 0 && loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color="#fff" size="large" />
@@ -111,9 +152,9 @@ export default function DiscoverScreen() {
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
-        data={articles}
+        data={feedData}
         renderItem={renderItem}
-        keyExtractor={(item) => String(item.pageid)}
+        keyExtractor={(item) => `${item.isHighlight ? 'h' : ''}${item.pageid}`}
         pagingEnabled
         snapToInterval={H}
         snapToAlignment="start"

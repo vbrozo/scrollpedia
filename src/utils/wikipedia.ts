@@ -60,6 +60,42 @@ export async function searchArticles(query: string): Promise<WikiArticle[]> {
   return processPages(data?.query?.pages ?? {});
 }
 
+export async function fetchDailyHighlight(): Promise<WikiArticle | null> {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+
+  // Try Croatian Wikipedia first, fall back to English
+  const langs = ['hr', 'en'];
+  for (const lang of langs) {
+    try {
+      const url = `https://${lang}.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${d}`;
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const tfa = data?.tfa;
+      if (!tfa?.title || !tfa?.extract) continue;
+
+      return {
+        pageid: tfa.pageid ?? -1,
+        title: tfa.title,
+        extract: tfa.extract,
+        thumbnail: tfa.thumbnail
+          ? { source: tfa.thumbnail.source, width: tfa.thumbnail.width, height: tfa.thumbnail.height }
+          : undefined,
+        fullurl:
+          tfa.content_urls?.desktop?.page ??
+          `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(tfa.title)}`,
+        isHighlight: true,
+      };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export async function fetchFullArticle(title: string): Promise<string> {
   const url =
     BASE +
