@@ -41,7 +41,7 @@ export default function DiscoverScreen() {
   const [onThisDay, setOnThisDay] = useState<WikiArticle | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
-  const { articles, loading, error, loadMore, reset } = useArticles(category, lang);
+  const { articles, loading, error, hasMore, loadMore, reset } = useArticles(category, lang);
   const flatListRef = useRef<FlatList<WikiArticle>>(null);
   const currentIndexRef = useRef(0);
   const feedLengthRef = useRef(0);
@@ -182,7 +182,8 @@ export default function DiscoverScreen() {
   }
 
   function renderFooter() {
-    if (error && feedData.length > 0) {
+    if (feedData.length === 0) return null;
+    if (error) {
       return (
         <View style={[styles.loader, { height: H }]}>
           <Text style={styles.errorEmoji}>⚠️</Text>
@@ -193,12 +194,22 @@ export default function DiscoverScreen() {
         </View>
       );
     }
-    if (!loading || feedData.length === 0) return null;
-    return (
-      <View style={[styles.loader, { height: H }]}>
-        <ActivityIndicator color="#fff" size="large" />
-      </View>
-    );
+    if (loading) {
+      return (
+        <View style={[styles.loader, { height: H }]}>
+          <ActivityIndicator color="#fff" size="large" />
+        </View>
+      );
+    }
+    if (!hasMore) {
+      return (
+        <View style={[styles.loader, { height: H }]}>
+          <Text style={styles.endEmoji}>✓</Text>
+          <Text style={styles.errorText}>Pogledali ste sve članke u ovoj kategoriji</Text>
+        </View>
+      );
+    }
+    return null;
   }
 
   if (error && feedData.length === 0) {
@@ -242,7 +253,7 @@ export default function DiscoverScreen() {
           snapToAlignment="start"
           decelerationRate="fast"
           showsVerticalScrollIndicator={false}
-          onEndReached={loadMore}
+          onEndReached={hasMore ? loadMore : undefined}
           onEndReachedThreshold={2}
           ListFooterComponent={renderFooter}
           style={{ height: H }}
@@ -276,6 +287,7 @@ const styles = StyleSheet.create({
   },
   loader: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#0a0a0a' },
   errorEmoji: { fontSize: 40 },
+  endEmoji: { fontSize: 32, color: 'rgba(255,255,255,0.4)', marginBottom: 8 },
   errorText: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 14,
