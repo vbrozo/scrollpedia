@@ -272,13 +272,17 @@ export default function DiscoverScreen() {
           onEndReachedThreshold={4}
           ListFooterComponent={renderFooter}
           style={{ height: H }}
-          // Keep more full-screen cards mounted around the viewport so the next
-          // card (and its image) is always pre-rendered before you page to it —
-          // windowSize=3 only mounted ~1 card ahead, causing blank cells + no
-          // image request on fast scroll.
-          windowSize={5}
+          // Full-screen paging feed: keep several cards mounted on each side so
+          // the next card (and its image) is always rendered before you snap to
+          // it. windowSize 3/5 left the next card unmounted on fast scroll →
+          // blank cell + no image request. removeClippedSubviews must be false
+          // or RN unmounts off-screen card content even within the window.
+          windowSize={7}
           initialNumToRender={3}
-          maxToRenderPerBatch={4}
+          maxToRenderPerBatch={5}
+          updateCellsBatchingPeriod={30}
+          removeClippedSubviews={false}
+          scrollEventThrottle={16}
           getItemLayout={(_, index) => ({ length: H, offset: H * index, index })}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig.current}

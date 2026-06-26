@@ -1,4 +1,4 @@
-const CACHE = 'scrollpedia-v6';
+const CACHE = 'scrollpedia-v7';
 
 // Only cache static assets that have content hashes in their names.
 // HTML files are intentionally NOT cached — always fetched fresh so
