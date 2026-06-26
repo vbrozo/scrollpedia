@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
-  Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { LANGUAGES, useLanguage } from '../src/context/LanguageContext';
@@ -55,10 +55,18 @@ export default function SettingsScreen() {
             return (
               <TouchableOpacity
                 key={o.key}
-                style={[styles.fontBtn, active && styles.fontBtnActive]}
                 onPress={() => setFontScale(o.scale)}
                 activeOpacity={0.75}
+                style={[styles.fontBtn, !active && { borderColor: 'rgba(255,255,255,0.07)' }]}
               >
+                {active ? (
+                  <LinearGradient
+                    colors={['rgba(94,127,255,0.18)', 'rgba(164,94,255,0.18)']}
+                    style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  />
+                ) : null}
                 <Text style={[styles.fontBtnText, active && styles.fontBtnTextActive, { fontSize: 14 * o.scale }]}>A</Text>
               </TouchableOpacity>
             );
@@ -77,6 +85,14 @@ export default function SettingsScreen() {
             <Text style={styles.clearBtnSub}>{t.amoledHint}</Text>
           </View>
           <View style={[styles.switchTrack, amoled && styles.switchTrackOn]}>
+            {amoled && (
+              <LinearGradient
+                colors={['#5e7fff', '#a45eff']}
+                style={[StyleSheet.absoluteFill, { borderRadius: 14 }]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              />
+            )}
             <View style={[styles.switchThumb, amoled && styles.switchThumbOn]} />
           </View>
         </TouchableOpacity>
@@ -103,7 +119,12 @@ export default function SettingsScreen() {
                 </View>
                 {active && (
                   <View style={styles.checkWrap}>
-                    <Text style={styles.check}>✓</Text>
+                    {Platform.OS === 'web' ? (
+                      // @ts-ignore
+                      <div dangerouslySetInnerHTML={{ __html: `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9l4.5 4.5 7.5-8" stroke="url(#cg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5e7fff"/><stop offset="100%" stop-color="#a45eff"/></linearGradient></defs></svg>` }} />
+                    ) : (
+                      <Text style={styles.check}>✓</Text>
+                    )}
                   </View>
                 )}
               </TouchableOpacity>
@@ -195,8 +216,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.07)',
   },
   fontBtnActive: {
-    backgroundColor: 'rgba(94,127,255,0.12)',
-    borderColor: 'rgba(94,127,255,0.4)',
+    borderColor: 'rgba(94,127,255,0.45)',
   },
   fontBtnText: {
     color: 'rgba(255,255,255,0.5)',
@@ -230,7 +250,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   switchTrackOn: {
-    backgroundColor: '#5e7fff',
+    backgroundColor: 'transparent',
   },
   switchThumb: {
     width: 22,

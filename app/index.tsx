@@ -9,6 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useArticles, FeedMode } from '../src/hooks/useArticles';
@@ -410,23 +411,25 @@ function FeedSelector({ mode, forYouAvailable, forYouLabel, exploreLabel, onSele
   return (
     <View style={[selectorStyles.wrapper, { height: FEED_SELECTOR_H + topInset, paddingTop: topInset }]} pointerEvents="box-none">
       <View style={selectorStyles.row}>
-        <SelectorTab
-          label={forYouLabel}
-          active={mode === 'forYou'}
-          dimmed={!forYouAvailable}
-          onPress={() => onSelect('forYou')}
-        />
-        <SelectorTab
-          label={exploreLabel}
-          active={mode === 'explore'}
-          onPress={() => onSelect('explore')}
-        />
+        <View style={selectorStyles.toggle}>
+          <SelectorPill
+            label={forYouLabel}
+            active={mode === 'forYou'}
+            dimmed={!forYouAvailable}
+            onPress={() => onSelect('forYou')}
+          />
+          <SelectorPill
+            label={exploreLabel}
+            active={mode === 'explore'}
+            onPress={() => onSelect('explore')}
+          />
+        </View>
       </View>
     </View>
   );
 }
 
-function SelectorTab({
+function SelectorPill({
   label,
   active,
   dimmed,
@@ -437,18 +440,23 @@ function SelectorTab({
   dimmed?: boolean;
   onPress: () => void;
 }) {
+  if (active) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={selectorStyles.pillWrap}>
+        <LinearGradient
+          colors={['#5e7fff', '#a45eff']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={selectorStyles.pillActive}
+        >
+          <Text style={[selectorStyles.pillTextActive, { fontFamily: FONT_SORA }]}>{label}</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={selectorStyles.tab}>
-      <Text
-        style={[
-          selectorStyles.tabText,
-          active && selectorStyles.tabTextActive,
-          dimmed && !active && selectorStyles.tabTextDimmed,
-        ]}
-      >
-        {label}
-      </Text>
-      {active && <View style={selectorStyles.indicator} />}
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={selectorStyles.pillInactive}>
+      <Text style={[selectorStyles.pillText, dimmed && selectorStyles.pillTextDimmed, { fontFamily: FONT_SORA }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -465,30 +473,36 @@ const selectorStyles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   row: {
+    paddingBottom: 4,
+  },
+  toggle: {
     flexDirection: 'row',
-    gap: 24,
-    paddingBottom: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 22,
+    padding: 3,
   },
-  tab: {
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    gap: 3,
+  pillWrap: { borderRadius: 19, overflow: 'hidden' },
+  pillActive: {
+    paddingHorizontal: 20,
+    paddingVertical: 7,
+    borderRadius: 19,
   },
-  tabText: {
-    color: 'rgba(255,255,255,0.45)',
+  pillInactive: {
+    paddingHorizontal: 20,
+    paddingVertical: 7,
+    borderRadius: 19,
+  },
+  pillTextActive: {
+    color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
-    fontFamily: FONT_SORA,
-    letterSpacing: 0.2,
+    fontWeight: '600',
   },
-  tabTextActive: { color: '#fff' },
-  tabTextDimmed: { color: 'rgba(255,255,255,0.22)' },
-  indicator: {
-    height: 2,
-    width: '100%',
-    borderRadius: 1,
-    backgroundColor: '#5e7fff',
+  pillText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
+    fontWeight: '600',
   },
+  pillTextDimmed: { color: 'rgba(255,255,255,0.22)' },
 });
 
 const styles = StyleSheet.create({
