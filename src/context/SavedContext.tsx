@@ -2,8 +2,10 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WikiArticle } from '../types';
 import { getArticleKey } from '../utils/storage';
+import { trackInteraction } from '../utils/interestProfile';
 
 const KEY = 'scrollpedia_saved';
+const MAX_SAVED = 200;
 
 interface SavedContextValue {
   saved: WikiArticle[];
@@ -50,10 +52,15 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<SavedContextValue>(() => {
     const isSaved = (article: WikiArticle) => savedKeys.has(getArticleKey(article));
-    const save = (article: WikiArticle) =>
-      setSaved((prev) =>
-        prev.some((a) => getArticleKey(a) === getArticleKey(article)) ? prev : [article, ...prev]
-      );
+    const save = (article: WikiArticle) => {
+      // Fire-and-forget interest tracking whenever an article is saved
+      trackInteraction(article, 'save');
+      setSaved((prev) => {
+        if (prev.some((a) => getArticleKey(a) === getArticleKey(article))) return prev;
+        const next = [article, ...prev];
+        return next.length > MAX_SAVED ? next.slice(0, MAX_SAVED) : next;
+      });
+    };
     const unsave = (article: WikiArticle) =>
       setSaved((prev) => prev.filter((a) => getArticleKey(a) !== getArticleKey(article)));
     const toggle = (article: WikiArticle) => (isSaved(article) ? unsave(article) : save(article));

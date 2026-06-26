@@ -1,12 +1,18 @@
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useFonts } from 'expo-font';
 import { LanguageProvider, useLanguage } from '../src/context/LanguageContext';
 import { SavedProvider } from '../src/context/SavedContext';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
+import { FONT_SORA } from '../src/utils/fonts';
 
 export default function RootLayout() {
+  // Load Sora variable font on native. On web the font comes from the
+  // Google Fonts <link> in +html.tsx so useFonts is a no-op there.
+  useFonts({ [FONT_SORA]: require('../assets/fonts/Sora-Variable.ttf') });
+
   return (
     <ThemeProvider>
       <LanguageProvider>
@@ -109,7 +115,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.3,
-    fontFamily: Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined,
+    fontFamily: FONT_SORA,
   },
   iconWrap: { alignItems: 'center', justifyContent: 'center' },
   iconEmoji: { fontSize: 20 },

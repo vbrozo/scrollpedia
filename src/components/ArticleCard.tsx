@@ -16,6 +16,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { getStrings } from '../utils/i18n';
 import { readingMinutes } from '../utils/reading';
+import { FONT_SORA } from '../utils/fonts';
 import ArticleImage from './ArticleImage';
 
 interface Props {
@@ -26,6 +27,7 @@ interface Props {
   height: number;
   onSkip?: () => void;
   onReadMore?: () => void;
+  onTopicSelect?: (rawCategory: string) => void;
 }
 
 const ACCENTS = [
@@ -41,9 +43,9 @@ const DOT_SETS = [
 ];
 
 const SWIPE_THRESHOLD = 80;
-const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
+const SORA = FONT_SORA;
 
-function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSkip, onReadMore }: Props) {
+function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSkip, onReadMore, onTopicSelect }: Props) {
   const { lang } = useLanguage();
   const t = getStrings(lang);
   const { fontScale, cardBg } = useTheme();
@@ -130,6 +132,24 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
         </View>
 
         <Text style={[styles.title, { fontFamily: SORA, fontSize: 34 * fontScale, lineHeight: 40 * fontScale }]} numberOfLines={3}>{article.title}</Text>
+
+        {article.topics && article.topics.length > 0 && (
+          <View style={styles.topicRow}>
+            {article.topics.map((chip) => (
+              <TouchableOpacity
+                key={chip.raw}
+                onPress={() => onTopicSelect?.(chip.raw)}
+                style={[styles.topicChip, { borderColor: accent.border }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.topicChipText, { color: accent.color, fontFamily: SORA }]}>
+                  {chip.display}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {truncated ? <Text style={[styles.extract, { fontFamily: SORA, fontSize: 15 * fontScale, lineHeight: 25 * fontScale }]} numberOfLines={4}>{truncated}</Text> : null}
 
         <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
@@ -183,6 +203,15 @@ const styles = StyleSheet.create({
   counter: { color: 'rgba(255,255,255,0.28)', fontSize: 12 },
   title: { color: '#fff', fontSize: 34, fontWeight: '800', letterSpacing: -0.5, lineHeight: 40, marginBottom: 12 },
   extract: { color: 'rgba(255,255,255,0.58)', fontSize: 15, lineHeight: 25, marginBottom: 14 },
+  topicRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
+  topicChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  topicChipText: { fontSize: 11, fontWeight: '600' },
   readMoreBtn: { alignSelf: 'flex-start', marginBottom: 18 },
   readMoreText: { color: 'rgba(255,255,255,0.38)', fontSize: 13, fontWeight: '600' },
   dots: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 16 },

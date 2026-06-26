@@ -9,9 +9,12 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { LANGUAGES, useLanguage } from '../src/context/LanguageContext';
 import { FONT_OPTIONS, useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
+
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.1';
 
 export default function SettingsScreen() {
   const { lang, setLang } = useLanguage();
@@ -133,7 +136,7 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>{t.aboutApp}</Text>
         <View style={styles.infoBox}>
-          <InfoRow label={t.version} value="1.0.0" />
+          <InfoRow label={t.version} value={APP_VERSION} />
           <InfoRow label={t.dataSource} value="Wikimedia Foundation" />
           <InfoRow label={t.contentLicense} value="CC BY-SA 4.0" />
         </View>

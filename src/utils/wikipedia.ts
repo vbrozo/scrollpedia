@@ -1,5 +1,6 @@
 import { WikiArticle } from '../types';
 import { getStrings } from './i18n';
+import { extractTopics } from './topicExtraction';
 
 // ─── Category names per language ───────────────────────────────────────────
 const CATEGORY_MAP: Record<string, Record<string, string>> = {
@@ -74,10 +75,15 @@ interface WikiApiPage {
   extract?: string;
   thumbnail?: { source: string; width: number; height: number };
   fullurl?: string;
+  categories?: Array<{ ns: number; title: string }>;
 }
 
 interface WikiApiResponse {
   query?: { pages?: Record<string, WikiApiPage> };
+  // New-style continuation (present when there are more pages)
+  continue?: { gcmcontinue?: string; continue?: string };
+  // Old-style continuation fallback
+  'query-continue'?: { categorymembers?: { gcmcontinue?: string } };
 }
 
 interface RestV1Page {
@@ -93,30 +99,56 @@ function actionBase(lang: string) {
   return `https://${lang}.wikipedia.org/w/api.php?format=json&origin=*`;
 }
 
+const WIKI_HEADERS = {
+  'Api-User-Agent': 'Scrollpedia/1.0.2 (https://github.com/vbrozo/scrollpedia)',
+};
+
+// Retries twice on network failures, timeouts, 429, and 5xx.
+// Delays: attempt 1 → 500 ms, attempt 2 → 1 000 ms.
 async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { signal: controller.signal });
-    return res;
-  } finally {
-    clearTimeout(timer);
+  const MAX_RETRIES = 2;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      await new Promise<void>((r) => setTimeout(r, 500 * attempt));
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: controller.signal, headers: WIKI_HEADERS });
+      // Don't retry on client errors except 429 (rate-limit)
+      if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {
+        return res;
+      }
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  throw lastErr;
 }
 
-const PROPS = '&prop=pageimages|extracts|info&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=1200&inprop=url';
+// Fetch categories alongside content in one request; clshow=!hidden filters
+// out maintenance/tracking categories on the server side before they arrive.
+const PROPS = '&prop=pageimages|extracts|info|categories&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=1200&inprop=url&clshow=!hidden&cllimit=15';
 
 function processPages(pages: Record<string, WikiApiPage>, lang: string): WikiArticle[] {
   return Object.values(pages)
     .filter((p) => p.extract && p.extract.trim().length > 50 && p.thumbnail?.source)
-    .map((p) => ({
-      pageid: p.pageid,
-      lang,
-      title: p.title,
-      extract: p.extract ?? '',
-      thumbnail: p.thumbnail,
-      fullurl: p.fullurl ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
-    }));
+    .map((p) => {
+      const rawCats = (p.categories ?? []).map((c) => c.title);
+      return {
+        pageid: p.pageid,
+        lang,
+        title: p.title,
+        extract: p.extract ?? '',
+        thumbnail: p.thumbnail,
+        fullurl: p.fullurl ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
+        topics: extractTopics(rawCats, lang),
+      };
+    });
 }
 
 async function queryPages(lang: string, params: string): Promise<WikiArticle[]> {
@@ -132,11 +164,30 @@ export function fetchRandomArticles(lang = 'hr'): Promise<WikiArticle[]> {
   return queryPages(lang, '&action=query&generator=random&grnnamespace=0&grnlimit=20');
 }
 
-export function fetchByCategory(category: string, lang = 'hr'): Promise<WikiArticle[]> {
-  return queryPages(
-    lang,
-    `&action=query&generator=categorymembers&gcmtitle=${encodeURIComponent(category)}&gcmlimit=20&gcmtype=page`,
-  );
+export interface CategoryResult {
+  articles: WikiArticle[];
+  continueToken: string | null;
+}
+
+export async function fetchByCategory(
+  category: string,
+  lang = 'hr',
+  continueToken?: string | null,
+): Promise<CategoryResult> {
+  let params = `&action=query&generator=categorymembers&gcmtitle=${encodeURIComponent(category)}&gcmlimit=20&gcmtype=page`;
+  if (continueToken) {
+    params += `&gcmcontinue=${encodeURIComponent(continueToken)}`;
+  }
+  const url = actionBase(lang) + params + PROPS;
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
+  const data: WikiApiResponse = await res.json();
+  const articles = processPages(data?.query?.pages ?? {}, lang);
+  const nextToken =
+    data?.continue?.gcmcontinue ??
+    data?.['query-continue']?.categorymembers?.gcmcontinue ??
+    null;
+  return { articles, continueToken: nextToken };
 }
 
 export async function searchArticles(query: string, lang = 'hr'): Promise<WikiArticle[]> {

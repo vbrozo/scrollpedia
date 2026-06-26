@@ -6,12 +6,13 @@ interface Props {
   selected: string | null;
   onSelect: (value: string | null) => void;
   lang: string;
+  topOffset?: number;
 }
 
-export default function CategoryFilter({ selected, onSelect, lang }: Props) {
+export default function CategoryFilter({ selected, onSelect, lang, topOffset = 0 }: Props) {
   const categories = getCategoriesForLang(lang);
   return (
-    <View style={styles.wrapper} pointerEvents="box-none">
+    <View style={[styles.wrapper, { top: topOffset }]} pointerEvents="box-none">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

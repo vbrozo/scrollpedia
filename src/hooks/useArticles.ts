@@ -1,8 +1,16 @@
 import { useState, useCallback, useRef } from 'react';
 import { WikiArticle } from '../types';
 import { fetchRandomArticles, fetchByCategory } from '../utils/wikipedia';
+import { isArticleAcceptable } from '../utils/articleScoring';
+import { fetchPersonalizedBatch } from '../utils/recommendationEngine';
 
-export function useArticles(category: string | null = null, lang = 'hr') {
+export type FeedMode = 'explore' | 'forYou';
+
+export function useArticles(
+  category: string | null = null,
+  lang = 'hr',
+  feedMode: FeedMode = 'explore',
+) {
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -10,6 +18,7 @@ export function useArticles(category: string | null = null, lang = 'hr') {
   const loadingRef = useRef(false);
 
   const seenIds = useRef<Set<number>>(new Set());
+  const categoryTokenRef = useRef<string | null>(null);
 
   const loadMore = useCallback(async () => {
     if (loadingRef.current) return;
@@ -18,41 +27,45 @@ export function useArticles(category: string | null = null, lang = 'hr') {
     setError(null);
     try {
       if (category) {
-        const next = await fetchByCategory(category, lang);
-        const fresh = next.filter((a) => !seenIds.current.has(a.pageid));
+        // Category feed: paginated, finite
+        const { articles: next, continueToken } = await fetchByCategory(
+          category,
+          lang,
+          categoryTokenRef.current,
+        );
+        categoryTokenRef.current = continueToken;
+        const fresh = next.filter(
+          (a) => !seenIds.current.has(a.pageid) && isArticleAcceptable(a),
+        );
         fresh.forEach((a) => seenIds.current.add(a.pageid));
-        if (fresh.length > 0) {
-          setArticles((prev) => [...prev, ...fresh]);
-        } else {
-          setHasMore(false);
-        }
+        if (fresh.length > 0) setArticles((prev) => [...prev, ...fresh]);
+        if (!continueToken) setHasMore(false);
       } else {
-        // Fire batches of 3 parallel requests until we have at least MIN_NEW
-        // new articles. This guarantees a meaningful scroll buffer on every
-        // loadMore and prevents the feed appearing stuck after a fast scroll.
+        // Random / For You feed: infinite — keep fetching until we have MIN_NEW
+        // quality articles. MAX_ROUNDS guards against runaway loops.
         const MIN_NEW = 10;
-        const MAX_ROUNDS = 3;
-        const PARALLEL = 3;
+        const MAX_ROUNDS = 5;
         const collected: WikiArticle[] = [];
+
         for (let round = 0; round < MAX_ROUNDS && collected.length < MIN_NEW; round++) {
-          const results = await Promise.allSettled(
-            Array.from({ length: PARALLEL }, () => fetchRandomArticles(lang))
-          );
-          for (const r of results) {
-            if (r.status !== 'fulfilled') continue;
-            for (const a of r.value) {
-              if (!seenIds.current.has(a.pageid)) {
-                seenIds.current.add(a.pageid);
-                collected.push(a);
-              }
+          const batch =
+            feedMode === 'forYou'
+              ? await fetchPersonalizedBatch(lang).catch(() => null)
+              : await fetchRandomArticles(lang).catch(() => null);
+
+          if (!batch) continue;
+
+          for (const a of batch) {
+            if (!seenIds.current.has(a.pageid) && isArticleAcceptable(a)) {
+              seenIds.current.add(a.pageid);
+              collected.push(a);
             }
           }
         }
-        if (collected.length === 0) {
-          throw new Error('No new articles found');
-        }
+
+        if (collected.length === 0) throw new Error('No new articles found');
         setArticles((prev) => [...prev, ...collected]);
-        // Random feed is effectively infinite — never set hasMore=false
+        // Both random and for-you feeds are infinite — never set hasMore=false
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Greška pri učitavanju');
@@ -60,11 +73,12 @@ export function useArticles(category: string | null = null, lang = 'hr') {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [category, lang]);
+  }, [category, lang, feedMode]);
 
   const reset = useCallback(() => {
     loadingRef.current = false;
     seenIds.current = new Set();
+    categoryTokenRef.current = null;
     setLoading(false);
     setHasMore(true);
     setArticles([]);

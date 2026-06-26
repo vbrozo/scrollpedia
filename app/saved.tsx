@@ -13,8 +13,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 import { useSaved } from '../src/context/SavedContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
-
-const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
+import { FONT_SORA as SORA } from '../src/utils/fonts';
 
 export default function SavedScreen() {
   const { lang } = useLanguage();

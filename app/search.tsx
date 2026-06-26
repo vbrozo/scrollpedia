@@ -17,6 +17,7 @@ import ArticleModal from '../src/components/ArticleModal';
 import { useSaved } from '../src/context/SavedContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
+import { FONT_SORA } from '../src/utils/fonts';
 
 export default function SearchScreen() {
   const { lang } = useLanguage();
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '400',
     padding: 0,
-    fontFamily: Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined,
+    fontFamily: FONT_SORA,
   },
   clearBtn: {
     color: 'rgba(255,255,255,0.4)',
@@ -189,14 +190,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     lineHeight: 26,
-    fontFamily: Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined,
+    fontFamily: FONT_SORA,
   },
   emptySubtitle: {
     color: 'rgba(255,255,255,0.38)',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
-    fontFamily: Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined,
+    fontFamily: FONT_SORA,
   },
   emptyText: {
     color: 'rgba(255,255,255,0.4)',

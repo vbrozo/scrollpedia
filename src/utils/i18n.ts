@@ -53,6 +53,8 @@ export const STRINGS = {
     fontSizeHint: 'Mijenja veličinu naslova i teksta članaka.',
     amoledMode: 'AMOLED crna',
     amoledHint: 'Čisto crna pozadina — štedi bateriju na OLED zaslonima.',
+    forYou: 'Za tebe',
+    explore: 'Istraži',
   },
   en: {
     all: 'All',
@@ -108,6 +110,8 @@ export const STRINGS = {
     fontSizeHint: 'Changes the size of article titles and body text.',
     amoledMode: 'AMOLED black',
     amoledHint: 'Pure black background — saves battery on OLED screens.',
+    forYou: 'For You',
+    explore: 'Explore',
   },
   de: {
     all: 'Alle',
@@ -163,6 +167,8 @@ export const STRINGS = {
     fontSizeHint: 'Ändert die Größe von Artikeltiteln und Textkörper.',
     amoledMode: 'AMOLED-Schwarz',
     amoledHint: 'Reines Schwarz — spart Akku auf OLED-Bildschirmen.',
+    forYou: 'Für dich',
+    explore: 'Entdecken',
   },
   fr: {
     all: 'Tous',
@@ -218,6 +224,8 @@ export const STRINGS = {
     fontSizeHint: 'Modifie la taille des titres et du texte des articles.',
     amoledMode: 'Noir AMOLED',
     amoledHint: 'Fond noir pur — économise la batterie sur les écrans OLED.',
+    forYou: 'Pour toi',
+    explore: 'Explorer',
   },
   es: {
     all: 'Todo',
@@ -273,6 +281,8 @@ export const STRINGS = {
     fontSizeHint: 'Cambia el tamaño de los títulos y el texto de los artículos.',
     amoledMode: 'Negro AMOLED',
     amoledHint: 'Fondo negro puro: ahorra batería en pantallas OLED.',
+    forYou: 'Para ti',
+    explore: 'Explorar',
   },
   it: {
     all: 'Tutti',
@@ -328,6 +338,8 @@ export const STRINGS = {
     fontSizeHint: 'Cambia la dimensione di titoli e testo degli articoli.',
     amoledMode: 'Nero AMOLED',
     amoledHint: 'Sfondo nero puro: risparmia batteria su schermi OLED.',
+    forYou: 'Per te',
+    explore: 'Esplora',
   },
 };
 
