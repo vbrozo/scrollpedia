@@ -75,11 +75,15 @@ export default function Root({ children }: PropsWithChildren) {
           }
           /* Fill the entire viewport edge-to-edge (incl. bottom safe-area) so the
              tab bar reaches the physical bottom instead of floating above the
-             home-indicator zone. */
+             home-indicator zone. Do NOT set an explicit height: 100dvh excludes
+             the bottom safe-area in iOS standalone PWA and leaves a navy strip.
+             top/bottom:0 define the height and include the safe-area. */
           #root {
             position: fixed;
-            inset: 0;
-            height: 100dvh;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
           }
           * {
             -webkit-tap-highlight-color: transparent;
