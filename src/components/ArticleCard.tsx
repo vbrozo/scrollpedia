@@ -97,8 +97,9 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
   const minutes = readingMinutes(article.extract);
 
   const topPad = insets.top + FEED_SELECTOR_H + 8;
-  const botPad = isWeb ? 80 : Platform.OS === 'ios' ? 95 : 75;
-  const ACTION_H = 56; // height of action buttons row
+  // Buttons sit flush above the tab bar: safe-area bottom + visible tab bar content (~58px)
+  const botPad = isWeb ? 80 : insets.bottom + 58;
+  const ACTION_H = 56;
 
   // Story indicator: up to MAX_DOTS, current index highlighted
   const dotCount = Math.max(1, Math.min(total || 1, MAX_DOTS));
