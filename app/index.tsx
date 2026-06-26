@@ -9,6 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useArticles, FeedMode } from '../src/hooks/useArticles';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -44,6 +45,7 @@ function todayCacheKey(lang: string) {
 
 export default function DiscoverScreen() {
   const { width: W, height: H } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { lang } = useLanguage();
   const { bg } = useTheme();
   const t = getStrings(lang);
@@ -309,7 +311,7 @@ export default function DiscoverScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bg }]}>
       {!showSkeletons && feedData.length > 0 && (
-        <View style={styles.progressTrack} pointerEvents="none">
+        <View style={[styles.progressTrack, { top: insets.top }]} pointerEvents="none">
           <Animated.View
             style={[
               styles.progressFill,
@@ -373,13 +375,14 @@ export default function DiscoverScreen() {
         forYouLabel={t.forYou}
         exploreLabel={t.explore}
         onSelect={handleFeedModeChange}
+        topInset={insets.top}
       />
 
       <CategoryFilter
         selected={category}
         onSelect={handleCategoryChange}
         lang={lang}
-        topOffset={FEED_SELECTOR_H}
+        topOffset={FEED_SELECTOR_H + insets.top}
       />
 
       <ArticleModal article={modalArticle} onClose={() => setModalArticle(null)} />
@@ -399,11 +402,13 @@ interface FeedSelectorProps {
   forYouLabel: string;
   exploreLabel: string;
   onSelect: (mode: FeedMode) => void;
+  /** Safe-area top inset (status bar / notch) so the tabs clear it in PWA. */
+  topInset?: number;
 }
 
-function FeedSelector({ mode, forYouAvailable, forYouLabel, exploreLabel, onSelect }: FeedSelectorProps) {
+function FeedSelector({ mode, forYouAvailable, forYouLabel, exploreLabel, onSelect, topInset = 0 }: FeedSelectorProps) {
   return (
-    <View style={selectorStyles.wrapper} pointerEvents="box-none">
+    <View style={[selectorStyles.wrapper, { height: FEED_SELECTOR_H + topInset, paddingTop: topInset }]} pointerEvents="box-none">
       <View style={selectorStyles.row}>
         <SelectorTab
           label={forYouLabel}

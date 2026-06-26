@@ -13,12 +13,14 @@ import Constants from 'expo-constants';
 import { LANGUAGES, useLanguage } from '../src/context/LanguageContext';
 import { FONT_OPTIONS, useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.1';
 
 export default function SettingsScreen() {
   const { lang, setLang } = useLanguage();
   const { fontScale, amoled, bg, setFontScale, setAmoled } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = getStrings(lang);
   const [clearing, setClearing] = useState(false);
   const [cleared, setCleared] = useState(false);
@@ -42,7 +44,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: bg }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: bg }]} contentContainerStyle={[styles.content, { paddingTop: Math.max(styles.content.paddingTop, insets.top + 12) }]}>
       <Text style={styles.header}>{t.settingsHeader}</Text>
 
       <View style={styles.section}>
