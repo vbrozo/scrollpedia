@@ -204,9 +204,13 @@ export default function DiscoverScreen() {
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
 
-  async function handleOnboardingDone() {
+  async function handleOnboardingDone(pickedCategory?: string | null) {
     await AsyncStorage.setItem(ONBOARDING_KEY, '1');
     setShowOnboarding(false);
+    // If the user tapped a category in onboarding, open the feed filtered to it.
+    if (pickedCategory) {
+      handleCategoryChange(pickedCategory);
+    }
   }
 
   // Build feed: highlight → onthisday → regular articles (deduplicated)
