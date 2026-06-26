@@ -13,7 +13,9 @@ import {
 import { WikiArticle } from '../types';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { getStrings } from '../utils/i18n';
+import { readingMinutes } from '../utils/reading';
 import ArticleImage from './ArticleImage';
 
 interface Props {
@@ -44,6 +46,7 @@ const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
 function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSkip, onReadMore }: Props) {
   const { lang } = useLanguage();
   const t = getStrings(lang);
+  const { fontScale, cardBg } = useTheme();
   const { isSaved, save, toggle } = useSaved();
   const saved = isSaved(article);
   const [swipeLabel, setSwipeLabel] = useState<'SAVE' | 'SKIP' | null>(null);
@@ -92,10 +95,11 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
 
   const rotate = swipeX.interpolate({ inputRange: [-200, 0, 200], outputRange: ['-3deg', '0deg', '3deg'], extrapolate: 'clamp' });
   const truncated = article.extract.length > 220 ? article.extract.slice(0, 217) + '…' : article.extract;
+  const minutes = readingMinutes(article.extract);
 
   return (
     <Animated.View
-      style={[styles.card, { width: W, height: H }, { transform: [{ translateX: swipeX }, { rotate }] }]}
+      style={[styles.card, { width: W, height: H, backgroundColor: cardBg }, { transform: [{ translateX: swipeX }, { rotate }] }]}
       {...(isWeb ? {} : panResponder.panHandlers)}
     >
       {/* Ghost globe */}
@@ -114,14 +118,19 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
 
       <View style={[styles.content, { paddingBottom: isWeb ? 80 : Platform.OS === 'ios' ? 110 : 90 }]}>
         <View style={styles.pillRow}>
-          <View style={[styles.pill, { backgroundColor: accent.bg, borderColor: accent.border }]}>
-            <Text style={[styles.pillText, { color: accent.color, fontFamily: SORA }]}>Wikipedia</Text>
+          <View style={styles.pillGroup}>
+            <View style={[styles.pill, { backgroundColor: accent.bg, borderColor: accent.border }]}>
+              <Text style={[styles.pillText, { color: accent.color, fontFamily: SORA }]}>Wikipedia</Text>
+            </View>
+            <View style={styles.readTimePill}>
+              <Text style={[styles.readTimeText, { fontFamily: SORA }]}>⏱ {t.readingTime(minutes)}</Text>
+            </View>
           </View>
           {total > 0 && <Text style={[styles.counter, { fontFamily: SORA }]}>{index + 1} / {total}</Text>}
         </View>
 
-        <Text style={[styles.title, { fontFamily: SORA }]} numberOfLines={3}>{article.title}</Text>
-        {truncated ? <Text style={[styles.extract, { fontFamily: SORA }]} numberOfLines={4}>{truncated}</Text> : null}
+        <Text style={[styles.title, { fontFamily: SORA, fontSize: 34 * fontScale, lineHeight: 40 * fontScale }]} numberOfLines={3}>{article.title}</Text>
+        {truncated ? <Text style={[styles.extract, { fontFamily: SORA, fontSize: 15 * fontScale, lineHeight: 25 * fontScale }]} numberOfLines={4}>{truncated}</Text> : null}
 
         <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
           <Text style={[styles.readMoreText, { fontFamily: SORA }]}>{t.readMore} →</Text>
@@ -166,8 +175,11 @@ const styles = StyleSheet.create({
   latitude: { position: 'absolute', left: 0, right: 0, height: 1 },
   content: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 22 },
   pillRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  pillGroup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   pill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   pillText: { fontSize: 12, fontWeight: '600' },
+  readTimePill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.12)' },
+  readTimeText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
   counter: { color: 'rgba(255,255,255,0.28)', fontSize: 12 },
   title: { color: '#fff', fontSize: 34, fontWeight: '800', letterSpacing: -0.5, lineHeight: 40, marginBottom: 12 },
   extract: { color: 'rgba(255,255,255,0.58)', fontSize: 15, lineHeight: 25, marginBottom: 14 },

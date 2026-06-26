@@ -3,16 +3,19 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { LanguageProvider, useLanguage } from '../src/context/LanguageContext';
 import { SavedProvider } from '../src/context/SavedContext';
+import { ThemeProvider } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
 
 export default function RootLayout() {
   return (
-    <LanguageProvider>
-      <SavedProvider>
-        <StatusBar style="light" />
-        <AppTabs />
-      </SavedProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <SavedProvider>
+          <StatusBar style="light" />
+          <AppTabs />
+        </SavedProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   FlatList,
   Platform,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useArticles } from '../src/hooks/useArticles';
 import { useLanguage } from '../src/context/LanguageContext';
+import { useTheme } from '../src/context/ThemeContext';
 import ArticleCard from '../src/components/ArticleCard';
 import DailyHighlightCard from '../src/components/DailyHighlightCard';
 import OnThisDayCard from '../src/components/OnThisDayCard';
@@ -35,6 +37,7 @@ function todayCacheKey(lang: string) {
 export default function DiscoverScreen() {
   const { width: W, height: H } = useWindowDimensions();
   const { lang } = useLanguage();
+  const { bg } = useTheme();
   const [category, setCategory] = useState<string | null>(null);
   const [modalArticle, setModalArticle] = useState<WikiArticle | null>(null);
   const [highlight, setHighlight] = useState<WikiArticle | null>(null);
@@ -46,6 +49,9 @@ export default function DiscoverScreen() {
   const flatListRef = useRef<FlatList<WikiArticle>>(null);
   const currentIndexRef = useRef(0);
   const feedLengthRef = useRef(0);
+  // Reading-progress bar: position through the loaded feed (0→1). Driven
+  // directly from the viewability callback so it never triggers a re-render.
+  const progressAnim = useRef(new Animated.Value(0)).current;
   const previousLangRef = useRef(lang);
   // Stable ref so onViewableItemsChanged (which can't change after mount) can
   // always call the latest loadMore without being in its dependency list.
@@ -143,9 +149,15 @@ export default function DiscoverScreen() {
     if (viewableItems.length > 0) {
       const idx = viewableItems[0].index ?? 0;
       currentIndexRef.current = idx;
+      const len = feedLengthRef.current;
+      Animated.timing(progressAnim, {
+        toValue: len > 0 ? (idx + 1) / len : 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
       // Proactively pre-fetch when within 5 cards of the end so the next batch
       // arrives before the user hits the loading footer.
-      if (feedLengthRef.current - idx <= 5) {
+      if (len - idx <= 5) {
         loadMoreRef.current();
       }
     }
@@ -229,7 +241,7 @@ export default function DiscoverScreen() {
 
   if (error && feedData.length === 0) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { backgroundColor: bg }]}>
         <Text style={styles.errorEmoji}>⚠️</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={loadMore}>
@@ -240,7 +252,22 @@ export default function DiscoverScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bg }]}>
+      {!showSkeletons && feedData.length > 0 && (
+        <View style={styles.progressTrack} pointerEvents="none">
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                }),
+              },
+            ]}
+          />
+        </View>
+      )}
       {showSkeletons ? (
         <FlatList
           key="skeleton-list"
@@ -301,6 +328,19 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d1128' },
+  progressTrack: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    zIndex: 30,
+  },
+  progressFill: {
+    height: 3,
+    backgroundColor: '#5e7fff',
+  },
   center: {
     flex: 1,
     backgroundColor: '#0d1128',

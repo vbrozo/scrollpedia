@@ -15,10 +15,12 @@ import { WikiArticle } from '../src/types';
 import SavedCard from '../src/components/SavedCard';
 import ArticleModal from '../src/components/ArticleModal';
 import { useSaved } from '../src/context/SavedContext';
+import { useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
 
 export default function SearchScreen() {
   const { lang } = useLanguage();
+  const { bg } = useTheme();
   const { unsave } = useSaved();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<WikiArticle[]>([]);
@@ -60,7 +62,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bg }]}>
       <Text style={styles.header}>{t.searchHeader}</Text>
 
       <View style={styles.inputWrapper}>
