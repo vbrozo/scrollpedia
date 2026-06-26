@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { WikiArticle } from '../types';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -57,8 +56,6 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
   const { fontScale } = useTheme();
   const { isSaved, save, toggle } = useSaved();
   const insets = useSafeAreaInsets();
-  // Actual measured tab bar height (includes safe-area) — avoids magic numbers
-  const tabBarHeight = useBottomTabBarHeight();
   const saved = isSaved(article);
   const [swipeLabel, setSwipeLabel] = useState<'SAVE' | 'SKIP' | null>(null);
   const swipeX = useRef(new Animated.Value(0)).current;
@@ -100,8 +97,9 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
   const minutes = readingMinutes(article.extract);
 
   const topPad = insets.top + FEED_SELECTOR_H + 8;
-  // Buttons sit flush above the real tab bar — no magic numbers, no black gap
-  const botPad = tabBarHeight + 10;
+  // Buttons sit flush above the tab bar (web tab bar ≈ 65px, no extra safe-area).
+  // Adding insets.bottom here previously created a black gap, so we don't.
+  const botPad = isWeb ? 64 : Platform.OS === 'ios' ? 95 : 75;
   const ACTION_H = 56; // height of action buttons row
 
   // Story indicator: up to MAX_DOTS, current index highlighted
