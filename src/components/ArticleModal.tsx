@@ -14,7 +14,9 @@ import { fetchFullArticle } from '../utils/wikipedia';
 import { WikiArticle } from '../types';
 import RelatedArticles from './RelatedArticles';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { getStrings } from '../utils/i18n';
+import { readingMinutes } from '../utils/reading';
 
 interface Props {
   article: WikiArticle | null;
@@ -23,6 +25,7 @@ interface Props {
 
 export default function ArticleModal({ article, onClose }: Props) {
   const { lang } = useLanguage();
+  const { fontScale, modalBg } = useTheme();
   const t = getStrings(lang);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,6 +51,9 @@ export default function ArticleModal({ article, onClose }: Props) {
 
   if (!article) return null;
 
+  const bodyText = text || current?.extract || '';
+  const minutes = readingMinutes(bodyText);
+
   function handleSelectRelated(related: WikiArticle) {
     setStack((prev) => [...prev, related]);
   }
@@ -63,7 +69,7 @@ export default function ArticleModal({ article, onClose }: Props) {
       presentationStyle="pageSheet"
       onRequestClose={stack.length > 0 ? handleBack : onClose}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: modalBg }]}>
         <View style={styles.handle} />
 
         {/* Header */}
@@ -89,7 +95,8 @@ export default function ArticleModal({ article, onClose }: Props) {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.body}>{text || current?.extract}</Text>
+            <Text style={styles.readTime}>⏱ {t.readingTime(minutes)}</Text>
+            <Text style={[styles.body, { fontSize: 16 * fontScale, lineHeight: 26 * fontScale }]}>{bodyText}</Text>
 
             {current && (
               <RelatedArticles
@@ -166,6 +173,12 @@ const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
+  readTime: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
   body: {
     color: 'rgba(255,255,255,0.82)',
     fontSize: 16,

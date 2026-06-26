@@ -11,12 +11,14 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { LANGUAGES, useLanguage } from '../src/context/LanguageContext';
+import { FONT_OPTIONS, useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.1';
 
 export default function SettingsScreen() {
   const { lang, setLang } = useLanguage();
+  const { fontScale, amoled, bg, setFontScale, setAmoled } = useTheme();
   const t = getStrings(lang);
   const [clearing, setClearing] = useState(false);
   const [cleared, setCleared] = useState(false);
@@ -40,8 +42,43 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: bg }]} contentContainerStyle={styles.content}>
       <Text style={styles.header}>{t.settingsHeader}</Text>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>{t.displaySection}</Text>
+        <View style={styles.fontRow}>
+          {FONT_OPTIONS.map((o) => {
+            const active = fontScale === o.scale;
+            return (
+              <TouchableOpacity
+                key={o.key}
+                style={[styles.fontBtn, active && styles.fontBtnActive]}
+                onPress={() => setFontScale(o.scale)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.fontBtnText, active && styles.fontBtnTextActive, { fontSize: 14 * o.scale }]}>A</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={styles.hint}>{t.fontSizeHint}</Text>
+
+        <TouchableOpacity
+          style={[styles.toggleRow, amoled && styles.toggleRowActive]}
+          onPress={() => setAmoled(!amoled)}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.clearBtnEmoji}>{amoled ? '🌑' : '🌙'}</Text>
+          <View style={styles.clearBtnInfo}>
+            <Text style={styles.clearBtnTitle}>{t.amoledMode}</Text>
+            <Text style={styles.clearBtnSub}>{t.amoledHint}</Text>
+          </View>
+          <View style={[styles.switchTrack, amoled && styles.switchTrackOn]}>
+            <View style={[styles.switchThumb, amoled && styles.switchThumbOn]} />
+          </View>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>{t.languageSection}</Text>
@@ -139,6 +176,68 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 32,
+  },
+  fontRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    gap: 10,
+  },
+  fontBtn: {
+    flex: 1,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgb(20,27,52)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  fontBtnActive: {
+    backgroundColor: 'rgba(94,127,255,0.12)',
+    borderColor: 'rgba(94,127,255,0.4)',
+  },
+  fontBtnText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: '800',
+  },
+  fontBtnTextActive: {
+    color: '#fff',
+  },
+  toggleRow: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: 'rgb(20,27,52)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  toggleRowActive: {
+    borderColor: 'rgba(94,127,255,0.3)',
+  },
+  switchTrack: {
+    width: 46,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    padding: 3,
+    justifyContent: 'center',
+  },
+  switchTrackOn: {
+    backgroundColor: '#5e7fff',
+  },
+  switchThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#fff',
+  },
+  switchThumbOn: {
+    alignSelf: 'flex-end',
   },
   sectionLabel: {
     color: 'rgba(255,255,255,0.35)',

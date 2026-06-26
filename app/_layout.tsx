@@ -4,6 +4,7 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import { LanguageProvider, useLanguage } from '../src/context/LanguageContext';
 import { SavedProvider } from '../src/context/SavedContext';
+import { ThemeProvider } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
 import { FONT_SORA } from '../src/utils/fonts';
 
@@ -13,12 +14,14 @@ export default function RootLayout() {
   useFonts({ [FONT_SORA]: require('../assets/fonts/Sora-Variable.ttf') });
 
   return (
-    <LanguageProvider>
-      <SavedProvider>
-        <StatusBar style="light" />
-        <AppTabs />
-      </SavedProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <SavedProvider>
+          <StatusBar style="light" />
+          <AppTabs />
+        </SavedProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

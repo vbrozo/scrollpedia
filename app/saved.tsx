@@ -11,17 +11,19 @@ import SavedCard from '../src/components/SavedCard';
 import { WikiArticle } from '../src/types';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useSaved } from '../src/context/SavedContext';
+import { useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
 import { FONT_SORA as SORA } from '../src/utils/fonts';
 
 export default function SavedScreen() {
   const { lang } = useLanguage();
+  const { bg } = useTheme();
   const t = getStrings(lang);
   const { saved: articles, unsave } = useSaved();
 
   if (articles.length === 0) {
     return (
-      <View style={styles.empty}>
+      <View style={[styles.empty, { backgroundColor: bg }]}>
         {/* Gradient bookmark SVG */}
         {Platform.OS === 'web' ? (
           // @ts-ignore
@@ -41,7 +43,7 @@ export default function SavedScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: bg }]}>
       <Text style={[styles.header, { fontFamily: SORA }]}>{t.savedHeader}</Text>
       <FlatList
         data={articles}
