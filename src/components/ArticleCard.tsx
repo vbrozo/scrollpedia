@@ -14,6 +14,7 @@ import { WikiArticle } from '../types';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
+import { FONT_SORA } from '../utils/fonts';
 import ArticleImage from './ArticleImage';
 
 interface Props {
@@ -39,7 +40,7 @@ const DOT_SETS = [
 ];
 
 const SWIPE_THRESHOLD = 80;
-const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
+const SORA = FONT_SORA;
 
 function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSkip, onReadMore }: Props) {
   const { lang } = useLanguage();

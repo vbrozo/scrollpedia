@@ -12,6 +12,7 @@ import { WikiArticle } from '../types';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
+import { FONT_SORA } from '../utils/fonts';
 import ArticleImage from './ArticleImage';
 
 interface Props {
@@ -36,7 +37,7 @@ function todayFormatted(lang: string) {
   return `${now.getDate()}. ${months[now.getMonth()]}`;
 }
 
-const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
+const SORA = FONT_SORA;
 
 function OnThisDayCard({ article, width: W, height: H, onReadMore }: Props) {
   const { lang } = useLanguage();
