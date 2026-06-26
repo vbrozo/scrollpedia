@@ -160,11 +160,18 @@ export default function OnboardingScreen({ onDone }: Props) {
           </Text>
         </TouchableOpacity>
 
-        {!isLast && (
-          <TouchableOpacity onPress={onDone} style={styles.skipBtn} activeOpacity={0.7}>
-            <Text style={styles.skipText}>{t.onboardingSkip}</Text>
-          </TouchableOpacity>
-        )}
+        {/* Always reserve the skip button's space so the primary button keeps
+            the same (tab-bar-clearing) position on the last step too. */}
+        <TouchableOpacity
+          onPress={onDone}
+          style={styles.skipBtn}
+          activeOpacity={0.7}
+          disabled={isLast}
+        >
+          <Text style={[styles.skipText, isLast && styles.skipTextHidden]}>
+            {t.onboardingSkip}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -296,4 +303,5 @@ const styles = StyleSheet.create({
   },
   skipBtn: { alignItems: 'center', paddingVertical: 10 },
   skipText: { color: 'rgba(255,255,255,0.35)', fontSize: 14, fontWeight: '500' },
+  skipTextHidden: { opacity: 0 },
 });
