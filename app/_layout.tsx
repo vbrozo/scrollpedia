@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { LanguageProvider, useLanguage } from '../src/context/LanguageContext';
 import { SavedProvider } from '../src/context/SavedContext';
@@ -14,14 +15,16 @@ export default function RootLayout() {
   useFonts({ [FONT_SORA]: require('../assets/fonts/Sora-Variable.ttf') });
 
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <SavedProvider>
-          <StatusBar style="light" />
-          <AppTabs />
-        </SavedProvider>
-      </LanguageProvider>
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <SavedProvider>
+            <StatusBar style="light" />
+            <AppTabs />
+          </SavedProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
 

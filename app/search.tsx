@@ -18,10 +18,12 @@ import { useSaved } from '../src/context/SavedContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
 import { FONT_SORA } from '../src/utils/fonts';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SearchScreen() {
   const { lang } = useLanguage();
   const { bg } = useTheme();
+  const insets = useSafeAreaInsets();
   const { unsave } = useSaved();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<WikiArticle[]>([]);
@@ -63,7 +65,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: bg }]}>
+    <View style={[styles.container, { backgroundColor: bg, paddingTop: Math.max(styles.container.paddingTop, insets.top + 12) }]}>
       <Text style={styles.header}>{t.searchHeader}</Text>
 
       <View style={styles.inputWrapper}>

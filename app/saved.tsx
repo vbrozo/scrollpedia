@@ -14,10 +14,12 @@ import { useSaved } from '../src/context/SavedContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { getStrings } from '../src/utils/i18n';
 import { FONT_SORA as SORA } from '../src/utils/fonts';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SavedScreen() {
   const { lang } = useLanguage();
   const { bg } = useTheme();
+  const insets = useSafeAreaInsets();
   const t = getStrings(lang);
   const { saved: articles, unsave } = useSaved();
 
@@ -43,7 +45,7 @@ export default function SavedScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: bg }]}>
+    <View style={[styles.container, { backgroundColor: bg, paddingTop: Math.max(styles.container.paddingTop, insets.top + 12) }]}>
       <Text style={[styles.header, { fontFamily: SORA }]}>{t.savedHeader}</Text>
       <FlatList
         data={articles}
