@@ -97,7 +97,8 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
   const minutes = readingMinutes(article.extract);
 
   const topPad = insets.top + FEED_SELECTOR_H + 8;
-  const botPad = isWeb ? 80 : Platform.OS === 'ios' ? 95 : 75;
+  // Tab bar height: web=65, iOS native=85, Android native=65
+  const botPad = isWeb ? insets.bottom + 65 : Platform.OS === 'ios' ? 95 : 75;
   const ACTION_H = 56; // height of action buttons row
 
   // Story indicator: up to MAX_DOTS, current index highlighted
