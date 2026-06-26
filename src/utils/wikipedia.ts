@@ -1,5 +1,6 @@
 import { WikiArticle } from '../types';
 import { getStrings } from './i18n';
+import { extractTopics } from './topicExtraction';
 
 // ─── Category names per language ───────────────────────────────────────────
 const CATEGORY_MAP: Record<string, Record<string, string>> = {
@@ -74,6 +75,7 @@ interface WikiApiPage {
   extract?: string;
   thumbnail?: { source: string; width: number; height: number };
   fullurl?: string;
+  categories?: Array<{ ns: number; title: string }>;
 }
 
 interface WikiApiResponse {
@@ -128,19 +130,25 @@ async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response
   throw lastErr;
 }
 
-const PROPS = '&prop=pageimages|extracts|info&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=1200&inprop=url';
+// Fetch categories alongside content in one request; clshow=!hidden filters
+// out maintenance/tracking categories on the server side before they arrive.
+const PROPS = '&prop=pageimages|extracts|info|categories&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=1200&inprop=url&clshow=!hidden&cllimit=15';
 
 function processPages(pages: Record<string, WikiApiPage>, lang: string): WikiArticle[] {
   return Object.values(pages)
     .filter((p) => p.extract && p.extract.trim().length > 50 && p.thumbnail?.source)
-    .map((p) => ({
-      pageid: p.pageid,
-      lang,
-      title: p.title,
-      extract: p.extract ?? '',
-      thumbnail: p.thumbnail,
-      fullurl: p.fullurl ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
-    }));
+    .map((p) => {
+      const rawCats = (p.categories ?? []).map((c) => c.title);
+      return {
+        pageid: p.pageid,
+        lang,
+        title: p.title,
+        extract: p.extract ?? '',
+        thumbnail: p.thumbnail,
+        fullurl: p.fullurl ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(p.title)}`,
+        topics: extractTopics(rawCats, lang),
+      };
+    });
 }
 
 async function queryPages(lang: string, params: string): Promise<WikiArticle[]> {

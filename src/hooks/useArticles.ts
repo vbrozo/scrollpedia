@@ -1,8 +1,16 @@
 import { useState, useCallback, useRef } from 'react';
 import { WikiArticle } from '../types';
 import { fetchRandomArticles, fetchByCategory } from '../utils/wikipedia';
+import { isArticleAcceptable } from '../utils/articleScoring';
+import { fetchPersonalizedBatch } from '../utils/recommendationEngine';
 
-export function useArticles(category: string | null = null, lang = 'hr') {
+export type FeedMode = 'explore' | 'forYou';
+
+export function useArticles(
+  category: string | null = null,
+  lang = 'hr',
+  feedMode: FeedMode = 'explore',
+) {
   const [articles, setArticles] = useState<WikiArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -10,8 +18,6 @@ export function useArticles(category: string | null = null, lang = 'hr') {
   const loadingRef = useRef(false);
 
   const seenIds = useRef<Set<number>>(new Set());
-  // Tracks the Wikipedia continuation token for the current category page.
-  // Reset to null whenever the category or language changes.
   const categoryTokenRef = useRef<string | null>(null);
 
   const loadMore = useCallback(async () => {
@@ -21,42 +27,45 @@ export function useArticles(category: string | null = null, lang = 'hr') {
     setError(null);
     try {
       if (category) {
+        // Category feed: paginated, finite
         const { articles: next, continueToken } = await fetchByCategory(
           category,
           lang,
           categoryTokenRef.current,
         );
         categoryTokenRef.current = continueToken;
-        const fresh = next.filter((a) => !seenIds.current.has(a.pageid));
+        const fresh = next.filter(
+          (a) => !seenIds.current.has(a.pageid) && isArticleAcceptable(a),
+        );
         fresh.forEach((a) => seenIds.current.add(a.pageid));
-        if (fresh.length > 0) {
-          setArticles((prev) => [...prev, ...fresh]);
-        }
-        if (!continueToken) {
-          setHasMore(false);
-        }
+        if (fresh.length > 0) setArticles((prev) => [...prev, ...fresh]);
+        if (!continueToken) setHasMore(false);
       } else {
-        // Fetch one batch per round (20 articles each) until we have at least
-        // MIN_NEW unseen articles. Sequential requests avoid hammering the API —
-        // a single batch almost always satisfies MIN_NEW until seenIds is huge.
+        // Random / For You feed: infinite — keep fetching until we have MIN_NEW
+        // quality articles. MAX_ROUNDS guards against runaway loops.
         const MIN_NEW = 10;
-        const MAX_ROUNDS = 3;
+        const MAX_ROUNDS = 5;
         const collected: WikiArticle[] = [];
+
         for (let round = 0; round < MAX_ROUNDS && collected.length < MIN_NEW; round++) {
-          const batch = await fetchRandomArticles(lang).catch(() => null);
+          const batch =
+            feedMode === 'forYou'
+              ? await fetchPersonalizedBatch(lang).catch(() => null)
+              : await fetchRandomArticles(lang).catch(() => null);
+
           if (!batch) continue;
+
           for (const a of batch) {
-            if (!seenIds.current.has(a.pageid)) {
+            if (!seenIds.current.has(a.pageid) && isArticleAcceptable(a)) {
               seenIds.current.add(a.pageid);
               collected.push(a);
             }
           }
         }
-        if (collected.length === 0) {
-          throw new Error('No new articles found');
-        }
+
+        if (collected.length === 0) throw new Error('No new articles found');
         setArticles((prev) => [...prev, ...collected]);
-        // Random feed is effectively infinite — never set hasMore=false
+        // Both random and for-you feeds are infinite — never set hasMore=false
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Greška pri učitavanju');
@@ -64,7 +73,7 @@ export function useArticles(category: string | null = null, lang = 'hr') {
       setLoading(false);
       loadingRef.current = false;
     }
-  }, [category, lang]);
+  }, [category, lang, feedMode]);
 
   const reset = useCallback(() => {
     loadingRef.current = false;

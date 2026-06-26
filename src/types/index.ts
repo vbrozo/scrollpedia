@@ -1,3 +1,8 @@
+export interface TopicChip {
+  display: string; // cleaned human-readable name shown as chip
+  raw: string;     // original Wikipedia category title used for fetching
+}
+
 export interface WikiArticle {
   pageid: number;
   lang?: string;
@@ -13,4 +18,5 @@ export interface WikiArticle {
   isOnThisDay?: boolean;
   onThisDayYear?: number;
   onThisDayText?: string;
+  topics?: TopicChip[];         // up to 5 cleaned topic chips for display
 }

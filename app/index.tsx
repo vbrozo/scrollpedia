@@ -9,7 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useArticles } from '../src/hooks/useArticles';
+import { useArticles, FeedMode } from '../src/hooks/useArticles';
 import { useLanguage } from '../src/context/LanguageContext';
 import ArticleCard from '../src/components/ArticleCard';
 import DailyHighlightCard from '../src/components/DailyHighlightCard';
@@ -21,11 +21,19 @@ import ArticleModal from '../src/components/ArticleModal';
 import { WikiArticle } from '../src/types';
 import { fetchDailyHighlight, fetchOnThisDay } from '../src/utils/wikipedia';
 import { getStrings } from '../src/utils/i18n';
+import { FONT_SORA } from '../src/utils/fonts';
+import {
+  trackInteraction,
+  trackCategorySelect,
+  hasEnoughDataForFeed,
+} from '../src/utils/interestProfile';
 
 const HIGHLIGHT_CACHE_KEY = 'scrollpedia_daily_highlight';
 const ONTHISDAY_CACHE_KEY = 'scrollpedia_onthisday';
 const ONBOARDING_KEY = 'scrollpedia_onboarding_done';
 const SKELETON_COUNT = 4;
+// Height of the FeedSelector bar; CategoryFilter is offset by this amount
+const FEED_SELECTOR_H = 44;
 
 function todayCacheKey(lang: string) {
   const d = new Date();
@@ -35,22 +43,30 @@ function todayCacheKey(lang: string) {
 export default function DiscoverScreen() {
   const { width: W, height: H } = useWindowDimensions();
   const { lang } = useLanguage();
+  const t = getStrings(lang);
+
   const [category, setCategory] = useState<string | null>(null);
+  const [feedMode, setFeedMode] = useState<FeedMode>('explore');
+  const [forYouAvailable, setForYouAvailable] = useState(false);
   const [modalArticle, setModalArticle] = useState<WikiArticle | null>(null);
   const [highlight, setHighlight] = useState<WikiArticle | null>(null);
   const [onThisDay, setOnThisDay] = useState<WikiArticle | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
-  const { articles, loading, error, hasMore, loadMore, reset } = useArticles(category, lang);
-  const t = getStrings(lang);
+
+  const { articles, loading, error, hasMore, loadMore, reset } = useArticles(category, lang, feedMode);
+
   const flatListRef = useRef<FlatList<WikiArticle>>(null);
   const currentIndexRef = useRef(0);
   const feedLengthRef = useRef(0);
   const previousLangRef = useRef(lang);
-  // Stable ref so onViewableItemsChanged (which can't change after mount) can
-  // always call the latest loadMore without being in its dependency list.
   const loadMoreRef = useRef(loadMore);
   useEffect(() => { loadMoreRef.current = loadMore; }, [loadMore]);
+
+  // Check whether the user has enough history to unlock "For You"
+  useEffect(() => {
+    hasEnoughDataForFeed().then(setForYouAvailable);
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
@@ -109,7 +125,7 @@ export default function DiscoverScreen() {
     loadSpecialCards();
   }, [lang]);
 
-  // Reload articles after React commits category/language changes.
+  // Reload articles after React commits category/language/feedMode changes
   useEffect(() => {
     if (previousLangRef.current !== lang) {
       previousLangRef.current = lang;
@@ -123,14 +139,29 @@ export default function DiscoverScreen() {
     currentIndexRef.current = 0;
     flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     loadMore();
-  }, [category, lang, loadMore, reset]);
+  }, [category, lang, feedMode, loadMore, reset]);
 
-  const handleCategoryChange = useCallback(
-    (value: string | null) => {
-      setCategory(value);
-    },
-    []
-  );
+  const handleCategoryChange = useCallback((value: string | null) => {
+    setCategory(value);
+    if (value) {
+      trackCategorySelect(value, lang);
+      // Refresh forYou availability when user interacts
+      hasEnoughDataForFeed().then(setForYouAvailable);
+    }
+  }, [lang]);
+
+  // Tapping a topic chip sets that Wikipedia category as the active filter
+  const handleTopicSelect = useCallback((rawCategory: string) => {
+    setCategory(rawCategory);
+    trackCategorySelect(rawCategory, lang);
+    hasEnoughDataForFeed().then(setForYouAvailable);
+  }, [lang]);
+
+  const handleFeedModeChange = useCallback((mode: FeedMode) => {
+    if (mode === feedMode) return;
+    setFeedMode(mode);
+    setCategory(null);
+  }, [feedMode]);
 
   const handleSkip = useCallback(() => {
     const next = currentIndexRef.current + 1;
@@ -143,13 +174,20 @@ export default function DiscoverScreen() {
     if (viewableItems.length > 0) {
       const idx = viewableItems[0].index ?? 0;
       currentIndexRef.current = idx;
-      // Proactively pre-fetch when within 5 cards of the end so the next batch
-      // arrives before the user hits the loading footer.
+
+      // Track the viewed article for interest profiling (fire-and-forget)
+      const item: WikiArticle | undefined = viewableItems[0].item;
+      if (item && !item.isHighlight && !item.isOnThisDay) {
+        trackInteraction(item, 'view').then(() => {
+          hasEnoughDataForFeed().then(setForYouAvailable);
+        });
+      }
+
       if (feedLengthRef.current - idx <= 5) {
         loadMoreRef.current();
       }
     }
-  }, []); // stable — loadMore is accessed via ref
+  }, []);
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
 
@@ -175,30 +213,44 @@ export default function DiscoverScreen() {
     feedLengthRef.current = feedData.length;
   }, [feedData.length]);
 
-  // Pre-warm: after the first batch lands, immediately load a second one so
-  // the feed has a deep buffer (≥20 articles) before the user reaches the end.
   useEffect(() => {
     if (!category && articles.length > 0 && articles.length < 15 && hasMore) {
       loadMoreRef.current();
     }
   }, [articles.length, hasMore, category]);
 
-  // Show skeletons whenever the feed has no content yet and there's no error —
-  // not just while `loading` is true. This avoids a black gap between the React
-  // shell mounting (HTML splash removed) and the first data/onboarding appearing.
   const showSkeletons = feedData.length === 0 && !error;
+
+  const handleReadMore = useCallback((item: WikiArticle) => {
+    setModalArticle(item);
+    // Track that user opened the full article (fire-and-forget)
+    if (!item.isHighlight && !item.isOnThisDay) {
+      trackInteraction(item, 'read').then(() => {
+        hasEnoughDataForFeed().then(setForYouAvailable);
+      });
+    }
+  }, []);
 
   const renderItem = useCallback(({ item, index }: { item: WikiArticle; index: number }) => {
     if (item.isHighlight) {
-      return <DailyHighlightCard article={item} width={W} height={H} onReadMore={() => setModalArticle(item)} />;
+      return <DailyHighlightCard article={item} width={W} height={H} onReadMore={() => handleReadMore(item)} />;
     }
     if (item.isOnThisDay) {
-      return <OnThisDayCard article={item} width={W} height={H} onReadMore={() => setModalArticle(item)} />;
+      return <OnThisDayCard article={item} width={W} height={H} onReadMore={() => handleReadMore(item)} />;
     }
     return (
-      <ArticleCard article={item} index={index} total={feedData.length} width={W} height={H} onSkip={handleSkip} onReadMore={() => setModalArticle(item)} />
+      <ArticleCard
+        article={item}
+        index={index}
+        total={feedData.length}
+        width={W}
+        height={H}
+        onSkip={handleSkip}
+        onReadMore={() => handleReadMore(item)}
+        onTopicSelect={handleTopicSelect}
+      />
     );
-  }, [W, H, feedData.length, handleSkip]);
+  }, [W, H, feedData.length, handleSkip, handleReadMore, handleTopicSelect]);
 
   function renderFooter() {
     if (feedData.length === 0) return null;
@@ -213,9 +265,7 @@ export default function DiscoverScreen() {
         </View>
       );
     }
-    if (loading) {
-      return <SkeletonCard />;
-    }
+    if (loading) return <SkeletonCard />;
     if (!hasMore) {
       return (
         <View style={[styles.loader, { height: H }]}>
@@ -272,11 +322,6 @@ export default function DiscoverScreen() {
           onEndReachedThreshold={4}
           ListFooterComponent={renderFooter}
           style={{ height: H }}
-          // Full-screen paging feed: keep several cards mounted on each side so
-          // the next card (and its image) is always rendered before you snap to
-          // it. windowSize 3/5 left the next card unmounted on fast scroll →
-          // blank cell + no image request. removeClippedSubviews must be false
-          // or RN unmounts off-screen card content even within the window.
           windowSize={7}
           initialNumToRender={3}
           maxToRenderPerBatch={5}
@@ -289,7 +334,22 @@ export default function DiscoverScreen() {
         />
       )}
 
-      <CategoryFilter selected={category} onSelect={handleCategoryChange} lang={lang} />
+      {/* Feed mode selector — sits above the category chips */}
+      <FeedSelector
+        mode={feedMode}
+        forYouAvailable={forYouAvailable}
+        forYouLabel={t.forYou}
+        exploreLabel={t.explore}
+        onSelect={handleFeedModeChange}
+      />
+
+      <CategoryFilter
+        selected={category}
+        onSelect={handleCategoryChange}
+        lang={lang}
+        topOffset={FEED_SELECTOR_H}
+      />
+
       <ArticleModal article={modalArticle} onClose={() => setModalArticle(null)} />
 
       {onboardingChecked && showOnboarding && (
@@ -298,6 +358,101 @@ export default function DiscoverScreen() {
     </View>
   );
 }
+
+// ─── Feed mode selector ──────────────────────────────────────────────────────
+
+interface FeedSelectorProps {
+  mode: FeedMode;
+  forYouAvailable: boolean;
+  forYouLabel: string;
+  exploreLabel: string;
+  onSelect: (mode: FeedMode) => void;
+}
+
+function FeedSelector({ mode, forYouAvailable, forYouLabel, exploreLabel, onSelect }: FeedSelectorProps) {
+  return (
+    <View style={selectorStyles.wrapper} pointerEvents="box-none">
+      <View style={selectorStyles.row}>
+        <SelectorTab
+          label={forYouLabel}
+          active={mode === 'forYou'}
+          dimmed={!forYouAvailable}
+          onPress={() => onSelect('forYou')}
+        />
+        <SelectorTab
+          label={exploreLabel}
+          active={mode === 'explore'}
+          onPress={() => onSelect('explore')}
+        />
+      </View>
+    </View>
+  );
+}
+
+function SelectorTab({
+  label,
+  active,
+  dimmed,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  dimmed?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={selectorStyles.tab}>
+      <Text
+        style={[
+          selectorStyles.tabText,
+          active && selectorStyles.tabTextActive,
+          dimmed && !active && selectorStyles.tabTextDimmed,
+        ]}
+      >
+        {label}
+      </Text>
+      {active && <View style={selectorStyles.indicator} />}
+    </TouchableOpacity>
+  );
+}
+
+const selectorStyles = StyleSheet.create({
+  wrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: FEED_SELECTOR_H,
+    zIndex: 11,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 24,
+    paddingBottom: 6,
+  },
+  tab: {
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    gap: 3,
+  },
+  tabText: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: FONT_SORA,
+    letterSpacing: 0.2,
+  },
+  tabTextActive: { color: '#fff' },
+  tabTextDimmed: { color: 'rgba(255,255,255,0.22)' },
+  indicator: {
+    height: 2,
+    width: '100%',
+    borderRadius: 1,
+    backgroundColor: '#5e7fff',
+  },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d1128' },

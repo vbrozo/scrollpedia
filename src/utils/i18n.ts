@@ -47,6 +47,8 @@ export const STRINGS = {
     categoryEnd: 'Pogledali ste sve članke u ovoj kategoriji',
     searchPromo: 'Pristup milijunima Wikipedia\nčlanaka na dlanu',
     scrollHint: 'povuci gore',
+    forYou: 'Za tebe',
+    explore: 'Istraži',
   },
   en: {
     all: 'All',
@@ -96,6 +98,8 @@ export const STRINGS = {
     categoryEnd: "You've seen all articles in this category",
     searchPromo: 'Access millions of Wikipedia\narticles at your fingertips',
     scrollHint: 'scroll up',
+    forYou: 'For You',
+    explore: 'Explore',
   },
   de: {
     all: 'Alle',
@@ -145,6 +149,8 @@ export const STRINGS = {
     categoryEnd: 'Du hast alle Artikel in dieser Kategorie gesehen',
     searchPromo: 'Millionen Wikipedia-Artikel\njetzt auf deinem Gerät',
     scrollHint: 'nach oben wischen',
+    forYou: 'Für dich',
+    explore: 'Entdecken',
   },
   fr: {
     all: 'Tous',
@@ -194,6 +200,8 @@ export const STRINGS = {
     categoryEnd: 'Vous avez vu tous les articles de cette catégorie',
     searchPromo: "Des millions d'articles Wikipedia\ndans votre poche",
     scrollHint: 'glisser vers le haut',
+    forYou: 'Pour toi',
+    explore: 'Explorer',
   },
   es: {
     all: 'Todo',
@@ -243,6 +251,8 @@ export const STRINGS = {
     categoryEnd: 'Has visto todos los artículos de esta categoría',
     searchPromo: 'Accede a millones de artículos\nde Wikipedia en tu mano',
     scrollHint: 'deslizar hacia arriba',
+    forYou: 'Para ti',
+    explore: 'Explorar',
   },
   it: {
     all: 'Tutti',
@@ -292,6 +302,8 @@ export const STRINGS = {
     categoryEnd: 'Hai visto tutti gli articoli di questa categoria',
     searchPromo: 'Milioni di articoli Wikipedia\na portata di mano',
     scrollHint: 'scorri su',
+    forYou: 'Per te',
+    explore: 'Esplora',
   },
 };
 
