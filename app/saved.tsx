@@ -12,8 +12,7 @@ import { WikiArticle } from '../src/types';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useSaved } from '../src/context/SavedContext';
 import { getStrings } from '../src/utils/i18n';
-
-const SORA = Platform.OS === 'web' ? 'Sora, system-ui, sans-serif' : undefined;
+import { FONT_SORA as SORA } from '../src/utils/fonts';
 
 export default function SavedScreen() {
   const { lang } = useLanguage();

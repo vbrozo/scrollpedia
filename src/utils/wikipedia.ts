@@ -98,18 +98,34 @@ function actionBase(lang: string) {
 }
 
 const WIKI_HEADERS = {
-  'Api-User-Agent': 'Scrollpedia/1.0.1 (https://github.com/vbrozo/scrollpedia)',
+  'Api-User-Agent': 'Scrollpedia/1.0.2 (https://github.com/vbrozo/scrollpedia)',
 };
 
+// Retries twice on network failures, timeouts, 429, and 5xx.
+// Delays: attempt 1 → 500 ms, attempt 2 → 1 000 ms.
 async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { signal: controller.signal, headers: WIKI_HEADERS });
-    return res;
-  } finally {
-    clearTimeout(timer);
+  const MAX_RETRIES = 2;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      await new Promise<void>((r) => setTimeout(r, 500 * attempt));
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: controller.signal, headers: WIKI_HEADERS });
+      // Don't retry on client errors except 429 (rate-limit)
+      if (res.ok || (res.status >= 400 && res.status < 500 && res.status !== 429)) {
+        return res;
+      }
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  throw lastErr;
 }
 
 const PROPS = '&prop=pageimages|extracts|info&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=1200&inprop=url';
