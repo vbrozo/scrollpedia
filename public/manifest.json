@@ -6,8 +6,8 @@
   "scope": "/scrollpedia/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#0d1128",
+  "theme_color": "#0d1128",
   "categories": ["education", "news"],
   "lang": "hr",
   "icons": [

@@ -45,7 +45,7 @@ export default function Root({ children }: PropsWithChildren) {
 
         {/* PWA */}
         <link rel="manifest" href="/scrollpedia/manifest.json" />
-        <meta name="theme-color" content="#0a0a0a" />
+        <meta name="theme-color" content="#0d1128" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -68,7 +68,9 @@ export default function Root({ children }: PropsWithChildren) {
           html, body, #root {
             height: 100%;
             overflow: hidden;
-            background: #0a0a0a;
+            /* Match the app's navy so the bottom safe-area (home indicator)
+               doesn't show a black strip behind the tab bar in PWA mode. */
+            background: #0d1128;
             overscroll-behavior: none;
           }
           /* Use dynamic viewport height so mobile browser chrome doesn't cut content */
