@@ -98,6 +98,7 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
 
   const topPad = insets.top + FEED_SELECTOR_H + 8;
   const botPad = isWeb ? 80 : Platform.OS === 'ios' ? 95 : 75;
+  const ACTION_H = 56; // height of action buttons row
 
   // Story indicator: up to MAX_DOTS, current index highlighted
   const dotCount = Math.max(1, Math.min(total || 1, MAX_DOTS));
@@ -129,8 +130,8 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
         })}
       </View>
 
-      {/* Main content column */}
-      <View style={[styles.content, { paddingTop: topPad, paddingBottom: botPad }]}>
+      {/* Main content column — flows top-down, buttons pinned to bottom */}
+      <View style={[styles.content, { paddingTop: topPad, paddingBottom: botPad + ACTION_H + 12 }]}>
 
         {/* Hero image */}
         <View style={styles.heroWrap}>
@@ -169,17 +170,19 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
           {article.title}
         </Text>
 
-        {/* Tags */}
+        {/* Tags — max 2, single line */}
         {article.topics && article.topics.length > 0 && (
           <View style={styles.tagRow}>
-            {article.topics.slice(0, 3).map((chip) => (
+            {article.topics.slice(0, 2).map((chip) => (
               <TouchableOpacity
                 key={chip.raw}
                 onPress={() => onTopicSelect?.(chip.raw)}
                 style={styles.tag}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.tagText, { fontFamily: SORA }]}>{chip.display}</Text>
+                <Text style={[styles.tagText, { fontFamily: SORA }]} numberOfLines={1} ellipsizeMode="tail">
+                  {chip.display}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -204,32 +207,33 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
           )}
         </TouchableOpacity>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <NeutralAction
-            icon="bookmark"
-            label={saved ? t.saved : t.save}
-            onPress={() => toggle(article)}
-            active={saved}
-          />
-          <NeutralAction
-            icon="share"
-            label={t.share}
-            onPress={() => Share.share({ title: article.title, url: article.fullurl, message: article.fullurl })}
-          />
-          {/* Primary: Otvori */}
-          <TouchableOpacity onPress={() => Linking.openURL(article.fullurl)} style={styles.primaryBtn} activeOpacity={0.85}>
-            <LinearGradient colors={[GRAD_START, GRAD_END]} style={styles.primaryBtnInner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-              {isWeb ? (
-                // @ts-ignore
-                <div dangerouslySetInnerHTML={{ __html: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` }} />
-              ) : (
-                <Text style={{ color: '#fff', fontSize: 18 }}>↗</Text>
-              )}
-              <Text style={[styles.primaryBtnLabel, { fontFamily: SORA }]}>{t.open}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+      </View>
+
+      {/* Actions — pinned to bottom above tab bar */}
+      <View style={[styles.actions, { bottom: botPad, paddingHorizontal: 18 }]}>
+        <NeutralAction
+          icon="bookmark"
+          label={saved ? t.saved : t.save}
+          onPress={() => toggle(article)}
+          active={saved}
+        />
+        <NeutralAction
+          icon="share"
+          label={t.share}
+          onPress={() => Share.share({ title: article.title, url: article.fullurl, message: article.fullurl })}
+        />
+        {/* Primary: Otvori */}
+        <TouchableOpacity onPress={() => Linking.openURL(article.fullurl)} style={styles.primaryBtn} activeOpacity={0.85}>
+          <LinearGradient colors={[GRAD_START, GRAD_END]} style={styles.primaryBtnInner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            {isWeb ? (
+              // @ts-ignore
+              <div dangerouslySetInnerHTML={{ __html: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` }} />
+            ) : (
+              <Text style={{ color: '#fff', fontSize: 18 }}>↗</Text>
+            )}
+            <Text style={[styles.primaryBtnLabel, { fontFamily: SORA }]}>{t.open}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
       </View>
 
       {!isWeb && (
@@ -342,7 +346,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  actions: { flexDirection: 'row', gap: 10 },
+  actions: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    gap: 10,
+  },
   neutralBtn: {
     flex: 1,
     alignItems: 'center',
