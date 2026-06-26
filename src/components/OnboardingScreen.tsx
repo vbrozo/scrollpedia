@@ -12,6 +12,11 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
+import { getCategoriesForLang } from '../utils/wikipedia';
+
+// The 3rd slide (index 2) is an interactive category picker — tapping a
+// chip finishes onboarding and opens the feed filtered to that category.
+const CATEGORY_SLIDE = 2;
 
 const SLIDE_THEME = [
   {
@@ -25,9 +30,9 @@ const SLIDE_THEME = [
     accent: '#4caf50',
   },
   {
-    emoji: '👈👉',
-    gradient: ['#100a0a', '#1f0d10', '#180a1a'] as const,
-    accent: '#ff6b6b',
+    emoji: '🧭',
+    gradient: ['#0a0a18', '#15102f', '#1a0d33'] as const,
+    accent: '#a45eff',
   },
   {
     emoji: '✨',
@@ -40,43 +45,45 @@ const SLIDE_COPY: Record<string, { title: string; body: string }[]> = {
   hr: [
     { title: 'Dobrodošli u Scrollpedia', body: 'Beskonačni feed Wikipedia članaka na dlanu. Otkrivaj, uči i istraži svijet jednim swipeom.' },
     { title: 'Swipe gore i dolje', body: 'Kliži gore za sljedeći članak, dolje za prethodni. Beskonačno, bez zaustavljanja.' },
-    { title: 'Swipe lijevo i desno', body: 'Swipe desno da spremiš članak.\nSwipe lijevo da preskočiš.\n\nSpremljeni članci dostupni su u tabu Spremljeno.' },
+    { title: 'Istraži po temama', body: 'Odaberi kategoriju i odmah otvori članke o toj temi — ili nastavi za nasumični feed.' },
     { title: 'Svaki dan nešto novo', body: 'Svako jutro te čeka poseban Članak dana.\nPretraži po kategorijama ili koristi pretragu za bilo koji pojam.' },
   ],
   en: [
     { title: 'Welcome to Scrollpedia', body: 'An endless feed of Wikipedia articles in your hand. Discover, learn, and explore with one swipe.' },
     { title: 'Swipe up and down', body: 'Swipe up for the next article and down for the previous one. Endless, without stopping.' },
-    { title: 'Swipe left and right', body: 'Swipe right to save an article.\nSwipe left to skip.\n\nSaved articles are available in the Saved tab.' },
+    { title: 'Explore by topic', body: 'Pick a category to jump straight into articles on that topic — or continue for a random feed.' },
     { title: 'Something new every day', body: 'Every morning brings a special Article of the Day.\nBrowse categories or search for any topic.' },
   ],
   de: [
     { title: 'Willkommen bei Scrollpedia', body: 'Ein endloser Feed mit Wikipedia-Artikeln in deiner Hand. Entdecke und lerne mit einem Wisch.' },
     { title: 'Nach oben und unten wischen', body: 'Wische nach oben zum nächsten Artikel und nach unten zum vorherigen. Endlos und flüssig.' },
-    { title: 'Nach links und rechts wischen', body: 'Wische nach rechts, um einen Artikel zu speichern.\nWische nach links, um ihn zu überspringen.\n\nGespeicherte Artikel findest du im Tab Gespeichert.' },
+    { title: 'Nach Themen entdecken', body: 'Wähle eine Kategorie und springe direkt zu Artikeln dazu — oder mach weiter für einen zufälligen Feed.' },
     { title: 'Jeden Tag etwas Neues', body: 'Jeden Morgen wartet ein besonderer Artikel des Tages.\nNutze Kategorien oder suche nach einem Thema.' },
   ],
   fr: [
     { title: 'Bienvenue dans Scrollpedia', body: 'Un fil infini d’articles Wikipédia dans votre main. Découvrez et apprenez d’un simple geste.' },
     { title: 'Balayez vers le haut ou le bas', body: 'Balayez vers le haut pour l’article suivant et vers le bas pour le précédent. Sans fin.' },
-    { title: 'Balayez à gauche ou à droite', body: 'Balayez à droite pour enregistrer un article.\nBalayez à gauche pour passer.\n\nLes articles enregistrés sont dans l’onglet Enregistrés.' },
+    { title: 'Explorez par thème', body: 'Choisissez une catégorie pour accéder directement aux articles — ou continuez pour un fil aléatoire.' },
     { title: 'Du nouveau chaque jour', body: 'Chaque matin propose un article du jour.\nParcourez les catégories ou recherchez un sujet.' },
   ],
   es: [
     { title: 'Bienvenido a Scrollpedia', body: 'Un feed infinito de artículos de Wikipedia en tu mano. Descubre y aprende con un gesto.' },
     { title: 'Desliza arriba y abajo', body: 'Desliza arriba para el siguiente artículo y abajo para el anterior. Sin parar.' },
-    { title: 'Desliza izquierda y derecha', body: 'Desliza a la derecha para guardar un artículo.\nDesliza a la izquierda para saltarlo.\n\nLos artículos guardados están en Guardados.' },
+    { title: 'Explora por tema', body: 'Elige una categoría para ir directo a los artículos — o continúa para un feed aleatorio.' },
     { title: 'Algo nuevo cada día', body: 'Cada mañana llega un artículo del día.\nExplora categorías o busca cualquier tema.' },
   ],
   it: [
     { title: 'Benvenuto in Scrollpedia', body: 'Un feed infinito di articoli Wikipedia nella tua mano. Scopri e impara con un gesto.' },
     { title: 'Scorri su e giù', body: 'Scorri in alto per l’articolo successivo e in basso per quello precedente. Senza fermarti.' },
-    { title: 'Scorri a sinistra e destra', body: 'Scorri a destra per salvare un articolo.\nScorri a sinistra per saltarlo.\n\nGli articoli salvati sono nel tab Salvati.' },
+    { title: 'Esplora per tema', body: 'Scegli una categoria per andare subito agli articoli — o continua per un feed casuale.' },
     { title: 'Qualcosa di nuovo ogni giorno', body: 'Ogni mattina trovi un articolo del giorno.\nSfoglia le categorie o cerca un argomento.' },
   ],
 };
 
 interface Props {
-  onDone: () => void;
+  /** Called when onboarding finishes. If a category is passed, the feed
+   *  should open filtered to it. */
+  onDone: (category?: string | null) => void;
 }
 
 export default function OnboardingScreen({ onDone }: Props) {
@@ -87,6 +94,8 @@ export default function OnboardingScreen({ onDone }: Props) {
     ...theme,
     ...(SLIDE_COPY[lang] ?? SLIDE_COPY.en)[index],
   }));
+  // Real Wikipedia categories (skip the leading "All" entry, value === null).
+  const categories = getCategoriesForLang(lang).filter((c) => c.value !== null);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -122,7 +131,16 @@ export default function OnboardingScreen({ onDone }: Props) {
         style={{ flex: 1 }}
       >
         {slides.map((item, index) => (
-          <Slide key={index} item={item} width={W} height={H} index={index} scrollX={scrollX} />
+          <Slide
+            key={index}
+            item={item}
+            width={W}
+            height={H}
+            index={index}
+            scrollX={scrollX}
+            categories={index === CATEGORY_SLIDE ? categories : undefined}
+            onPickCategory={(value) => onDone(value)}
+          />
         ))}
       </Animated.ScrollView>
 
@@ -163,7 +181,7 @@ export default function OnboardingScreen({ onDone }: Props) {
         {/* Always reserve the skip button's space so the primary button keeps
             the same (tab-bar-clearing) position on the last step too. */}
         <TouchableOpacity
-          onPress={onDone}
+          onPress={() => onDone()}
           style={styles.skipBtn}
           activeOpacity={0.7}
           disabled={isLast}
@@ -183,12 +201,16 @@ function Slide({
   height,
   index,
   scrollX,
+  categories,
+  onPickCategory,
 }: {
   item: typeof SLIDE_THEME[0] & { title: string; body: string };
   width: number;
   height: number;
   index: number;
   scrollX: Animated.Value;
+  categories?: { label: string; value: string | null }[];
+  onPickCategory?: (value: string) => void;
 }) {
   const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
 
@@ -215,7 +237,23 @@ function Slide({
         </View>
         <Text style={styles.slideTitle}>{item.title}</Text>
         <Text style={styles.slideBody}>{item.body}</Text>
-        <View style={[styles.accentBar, { backgroundColor: item.accent }]} />
+
+        {categories ? (
+          <View style={styles.chipGrid}>
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat.label}
+                onPress={() => cat.value && onPickCategory?.(cat.value)}
+                style={[styles.catChip, { borderColor: item.accent + '55', backgroundColor: item.accent + '14' }]}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.catChipText, { color: '#fff' }]}>{cat.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.accentBar, { backgroundColor: item.accent }]} />
+        )}
       </Animated.View>
     </View>
   );
@@ -271,6 +309,23 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   accentBar: { width: 36, height: 3, borderRadius: 2 },
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
+  catChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 22,
+    borderWidth: 1,
+  },
+  catChipText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
   dots: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 220 : 140,
