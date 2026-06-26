@@ -97,11 +97,15 @@ function actionBase(lang: string) {
   return `https://${lang}.wikipedia.org/w/api.php?format=json&origin=*`;
 }
 
+const WIKI_HEADERS = {
+  'Api-User-Agent': 'Scrollpedia/1.0.1 (https://github.com/vbrozo/scrollpedia)',
+};
+
 async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await fetch(url, { signal: controller.signal, headers: WIKI_HEADERS });
     return res;
   } finally {
     clearTimeout(timer);
