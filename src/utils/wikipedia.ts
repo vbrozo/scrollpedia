@@ -67,6 +67,27 @@ export function getCategoriesForLang(lang: string) {
   ];
 }
 
+// ─── Internal types ─────────────────────────────────────────────────────────
+interface WikiApiPage {
+  pageid: number;
+  title: string;
+  extract?: string;
+  thumbnail?: { source: string; width: number; height: number };
+  fullurl?: string;
+}
+
+interface WikiApiResponse {
+  query?: { pages?: Record<string, WikiApiPage> };
+}
+
+interface RestV1Page {
+  pageid?: number;
+  title: string;
+  extract?: string;
+  thumbnail?: { source: string; width: number; height: number };
+  content_urls?: { desktop?: { page?: string } };
+}
+
 // ─── API helpers ────────────────────────────────────────────────────────────
 function actionBase(lang: string) {
   return `https://${lang}.wikipedia.org/w/api.php?format=json&origin=*`;
@@ -85,10 +106,10 @@ async function fetchWithTimeout(url: string, timeoutMs = 8000): Promise<Response
 
 const PROPS = '&prop=pageimages|extracts|info&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=1200&inprop=url';
 
-function processPages(pages: Record<string, any>, lang: string): WikiArticle[] {
+function processPages(pages: Record<string, WikiApiPage>, lang: string): WikiArticle[] {
   return Object.values(pages)
-    .filter((p: any) => p.extract && p.extract.trim().length > 50 && p.thumbnail?.source)
-    .map((p: any) => ({
+    .filter((p) => p.extract && p.extract.trim().length > 50 && p.thumbnail?.source)
+    .map((p) => ({
       pageid: p.pageid,
       lang,
       title: p.title,
@@ -98,44 +119,37 @@ function processPages(pages: Record<string, any>, lang: string): WikiArticle[] {
     }));
 }
 
-// ─── Public API ─────────────────────────────────────────────────────────────
-export async function fetchRandomArticles(lang = 'hr'): Promise<WikiArticle[]> {
-  const url = actionBase(lang) + '&action=query&generator=random&grnnamespace=0&grnlimit=20' + PROPS;
+async function queryPages(lang: string, params: string): Promise<WikiArticle[]> {
+  const url = actionBase(lang) + params + PROPS;
   const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
-  const data = await res.json();
+  const data: WikiApiResponse = await res.json();
   return processPages(data?.query?.pages ?? {}, lang);
 }
 
-export async function fetchByCategory(category: string, lang = 'hr'): Promise<WikiArticle[]> {
-  const url =
-    actionBase(lang) +
-    `&action=query&generator=categorymembers&gcmtitle=${encodeURIComponent(category)}&gcmlimit=20&gcmtype=page` +
-    PROPS;
-  const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
-  const data = await res.json();
-  return processPages(data?.query?.pages ?? {}, lang);
+// ─── Public API ─────────────────────────────────────────────────────────────
+export function fetchRandomArticles(lang = 'hr'): Promise<WikiArticle[]> {
+  return queryPages(lang, '&action=query&generator=random&grnnamespace=0&grnlimit=20');
+}
+
+export function fetchByCategory(category: string, lang = 'hr'): Promise<WikiArticle[]> {
+  return queryPages(
+    lang,
+    `&action=query&generator=categorymembers&gcmtitle=${encodeURIComponent(category)}&gcmlimit=20&gcmtype=page`,
+  );
 }
 
 export async function searchArticles(query: string, lang = 'hr'): Promise<WikiArticle[]> {
   if (!query.trim()) return [];
-  const url =
-    actionBase(lang) +
-    `&action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=15` +
-    PROPS;
-  const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
-  const data = await res.json();
-  return processPages(data?.query?.pages ?? {}, lang);
+  return queryPages(lang, `&action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=15`);
 }
 
 export async function fetchFullArticle(title: string, lang = 'hr'): Promise<string> {
   const url = actionBase(lang) + `&action=query&titles=${encodeURIComponent(title)}&prop=extracts&explaintext=1`;
   const res = await fetchWithTimeout(url);
   if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
-  const data = await res.json();
-  const page: any = Object.values(data?.query?.pages ?? {})[0];
+  const data: WikiApiResponse = await res.json();
+  const page = Object.values(data?.query?.pages ?? {})[0];
   return page?.extract ?? '';
 }
 
@@ -145,13 +159,11 @@ export async function fetchDailyHighlight(lang = 'hr'): Promise<WikiArticle | nu
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
 
-  // Only the requested language — no EN fallback. If there's no featured
-  // article for today (or it lacks an image), show none; the random feed fills in.
   try {
     const res = await fetchWithTimeout(`https://${lang}.wikipedia.org/api/rest_v1/feed/featured/${y}/${m}/${d}`);
     if (!res.ok) return null;
     const data = await res.json();
-    const tfa = data?.tfa;
+    const tfa: RestV1Page & { content_urls?: { desktop?: { page?: string } } } = data?.tfa;
     if (!tfa?.title || !tfa?.extract || !tfa?.thumbnail?.source) return null;
     return {
       pageid: tfa.pageid ?? -1,
@@ -172,16 +184,14 @@ export async function fetchOnThisDay(lang = 'hr'): Promise<WikiArticle | null> {
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
 
-  // Only the requested language — no EN fallback. If there's no event with an
-  // image for today, show none; the random feed fills in.
   try {
     const res = await fetchWithTimeout(`https://${lang}.wikipedia.org/api/rest_v1/feed/onthisday/selected/${m}/${d}`);
     if (!res.ok) return null;
     const data = await res.json();
-    const events: any[] = data?.selected ?? [];
-    const event = events.find((e) => e.pages?.some((p: any) => p.thumbnail));
+    const events: Array<{ year?: number; text?: string; pages?: RestV1Page[] }> = data?.selected ?? [];
+    const event = events.find((e) => e.pages?.some((p) => p.thumbnail));
     if (!event) return null;
-    const page = event.pages.find((p: any) => p.thumbnail);
+    const page = event.pages?.find((p) => p.thumbnail);
     if (!page) return null;
     return {
       pageid: page.pageid ?? -2,
@@ -206,9 +216,9 @@ export async function fetchRelatedArticles(title: string, lang = 'hr'): Promise<
     );
     if (!res.ok) throw new Error('related failed');
     const data = await res.json();
-    const pages: any[] = data?.pages ?? [];
+    const pages: RestV1Page[] = data?.pages ?? [];
     return pages.slice(0, 10).map((p) => ({
-      pageid: p.pageid ?? Math.random(),
+      pageid: p.pageid ?? 0,
       lang,
       title: p.title,
       extract: p.extract ?? '',

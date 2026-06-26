@@ -105,7 +105,7 @@ export default function SearchScreen() {
             <Text style={styles.emptyEmoji}>🌍</Text>
           )}
           <Text style={styles.emptyTitle}>{t.searchEmpty}</Text>
-          <Text style={styles.emptySubtitle}>Pristup milijunima Wikipedia{'\n'}članaka na dlanu</Text>
+          <Text style={styles.emptySubtitle}>{t.searchPromo}</Text>
           <View style={styles.dots}>
             <View style={[styles.dot, { width: 28, backgroundColor: '#5e7fff' }]} />
             <View style={[styles.dot, { width: 18, backgroundColor: '#a45eff' }]} />

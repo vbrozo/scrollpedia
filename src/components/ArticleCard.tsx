@@ -1,7 +1,6 @@
 import React, { memo, useRef, useState } from 'react';
 import {
   Animated,
-  Image,
   Linking,
   PanResponder,
   Platform,
@@ -15,6 +14,7 @@ import { WikiArticle } from '../types';
 import { useSaved } from '../context/SavedContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
+import ArticleImage from './ArticleImage';
 
 interface Props {
   article: WikiArticle;
@@ -100,13 +100,9 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
     >
       {/* Ghost globe */}
       <View style={[styles.globe, { width: globeSize, height: globeSize, borderRadius: globeSize / 2, top: globeTop, left: globeLeft, borderColor: accent.globe }]}>
-        {article.thumbnail?.source && (
-          <Image
-            source={{ uri: article.thumbnail.source }}
-            style={[styles.globeImage, { borderRadius: globeSize / 2 }]}
-            resizeMode="cover"
-          />
-        )}
+        <View style={[StyleSheet.absoluteFill, { opacity: 0.28 }]}>
+          <ArticleImage uri={article.thumbnail?.source} width={globeSize} height={globeSize} fallbackColors={['#0a0d20', '#0d1128', '#0a0a18']} />
+        </View>
         <View style={[styles.meridian, { left: meridian1Left, right: meridian1Left, borderColor: accent.meridian1 }]} />
         <View style={[styles.meridian, { left: meridian2Left, right: meridian2Left, borderColor: accent.meridian2 }]} />
         <View style={[styles.latitude, { top: '38%', backgroundColor: accent.latitude }]} />
@@ -145,7 +141,7 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
       {!isWeb && (
         <View style={[styles.hint, { top: Platform.OS === 'ios' ? 70 : 50 }]}>
           <Text style={styles.hintArrow}>↑</Text>
-          <Text style={[styles.hintText, { fontFamily: SORA }]}>povuci gore</Text>
+          <Text style={[styles.hintText, { fontFamily: SORA }]}>{t.scrollHint}</Text>
         </View>
       )}
     </Animated.View>
@@ -166,7 +162,6 @@ function ActionButton({ emoji, label, onPress, active }: { emoji: string; label:
 const styles = StyleSheet.create({
   card: { backgroundColor: '#0d1128', overflow: 'hidden' },
   globe: { position: 'absolute', borderWidth: 1, overflow: 'hidden' },
-  globeImage: { position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.28 } as any,
   meridian: { position: 'absolute', top: 0, bottom: 0, borderRadius: 999, borderWidth: 1 },
   latitude: { position: 'absolute', left: 0, right: 0, height: 1 },
   content: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 22 },

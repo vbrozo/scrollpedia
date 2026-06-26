@@ -21,6 +21,7 @@ import CategoryFilter from '../src/components/CategoryFilter';
 import ArticleModal from '../src/components/ArticleModal';
 import { WikiArticle } from '../src/types';
 import { fetchDailyHighlight, fetchOnThisDay } from '../src/utils/wikipedia';
+import { getStrings } from '../src/utils/i18n';
 
 const HIGHLIGHT_CACHE_KEY = 'scrollpedia_daily_highlight';
 const ONTHISDAY_CACHE_KEY = 'scrollpedia_onthisday';
@@ -42,6 +43,7 @@ export default function DiscoverScreen() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const { articles, loading, error, hasMore, loadMore, reset } = useArticles(category, lang);
+  const t = getStrings(lang);
   const flatListRef = useRef<FlatList<WikiArticle>>(null);
   const currentIndexRef = useRef(0);
   const feedLengthRef = useRef(0);
@@ -187,9 +189,9 @@ export default function DiscoverScreen() {
       return (
         <View style={[styles.loader, { height: H }]}>
           <Text style={styles.errorEmoji}>⚠️</Text>
-          <Text style={styles.errorText}>Greška pri učitavanju</Text>
+          <Text style={styles.errorText}>{t.loadError}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={loadMore}>
-            <Text style={styles.retryText}>Pokušaj ponovo</Text>
+            <Text style={styles.retryText}>{t.retryBtn}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -205,7 +207,7 @@ export default function DiscoverScreen() {
       return (
         <View style={[styles.loader, { height: H }]}>
           <Text style={styles.endEmoji}>✓</Text>
-          <Text style={styles.errorText}>Pogledali ste sve članke u ovoj kategoriji</Text>
+          <Text style={styles.errorText}>{t.categoryEnd}</Text>
         </View>
       );
     }
@@ -218,7 +220,7 @@ export default function DiscoverScreen() {
         <Text style={styles.errorEmoji}>⚠️</Text>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={loadMore}>
-          <Text style={styles.retryText}>Pokušaj ponovo</Text>
+          <Text style={styles.retryText}>{t.retryBtn}</Text>
         </TouchableOpacity>
       </View>
     );
