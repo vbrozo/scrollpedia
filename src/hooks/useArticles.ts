@@ -10,6 +10,9 @@ export function useArticles(category: string | null = null, lang = 'hr') {
   const loadingRef = useRef(false);
 
   const seenIds = useRef<Set<number>>(new Set());
+  // Tracks the Wikipedia continuation token for the current category page.
+  // Reset to null whenever the category or language changes.
+  const categoryTokenRef = useRef<string | null>(null);
 
   const loadMore = useCallback(async () => {
     if (loadingRef.current) return;
@@ -18,33 +21,34 @@ export function useArticles(category: string | null = null, lang = 'hr') {
     setError(null);
     try {
       if (category) {
-        const next = await fetchByCategory(category, lang);
+        const { articles: next, continueToken } = await fetchByCategory(
+          category,
+          lang,
+          categoryTokenRef.current,
+        );
+        categoryTokenRef.current = continueToken;
         const fresh = next.filter((a) => !seenIds.current.has(a.pageid));
         fresh.forEach((a) => seenIds.current.add(a.pageid));
         if (fresh.length > 0) {
           setArticles((prev) => [...prev, ...fresh]);
-        } else {
+        }
+        if (!continueToken) {
           setHasMore(false);
         }
       } else {
-        // Fire batches of 3 parallel requests until we have at least MIN_NEW
-        // new articles. This guarantees a meaningful scroll buffer on every
-        // loadMore and prevents the feed appearing stuck after a fast scroll.
+        // Fetch one batch per round (20 articles each) until we have at least
+        // MIN_NEW unseen articles. Sequential requests avoid hammering the API —
+        // a single batch almost always satisfies MIN_NEW until seenIds is huge.
         const MIN_NEW = 10;
         const MAX_ROUNDS = 3;
-        const PARALLEL = 3;
         const collected: WikiArticle[] = [];
         for (let round = 0; round < MAX_ROUNDS && collected.length < MIN_NEW; round++) {
-          const results = await Promise.allSettled(
-            Array.from({ length: PARALLEL }, () => fetchRandomArticles(lang))
-          );
-          for (const r of results) {
-            if (r.status !== 'fulfilled') continue;
-            for (const a of r.value) {
-              if (!seenIds.current.has(a.pageid)) {
-                seenIds.current.add(a.pageid);
-                collected.push(a);
-              }
+          const batch = await fetchRandomArticles(lang).catch(() => null);
+          if (!batch) continue;
+          for (const a of batch) {
+            if (!seenIds.current.has(a.pageid)) {
+              seenIds.current.add(a.pageid);
+              collected.push(a);
             }
           }
         }
@@ -65,6 +69,7 @@ export function useArticles(category: string | null = null, lang = 'hr') {
   const reset = useCallback(() => {
     loadingRef.current = false;
     seenIds.current = new Set();
+    categoryTokenRef.current = null;
     setLoading(false);
     setHasMore(true);
     setArticles([]);

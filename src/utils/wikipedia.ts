@@ -78,6 +78,10 @@ interface WikiApiPage {
 
 interface WikiApiResponse {
   query?: { pages?: Record<string, WikiApiPage> };
+  // New-style continuation (present when there are more pages)
+  continue?: { gcmcontinue?: string; continue?: string };
+  // Old-style continuation fallback
+  'query-continue'?: { categorymembers?: { gcmcontinue?: string } };
 }
 
 interface RestV1Page {
@@ -132,11 +136,30 @@ export function fetchRandomArticles(lang = 'hr'): Promise<WikiArticle[]> {
   return queryPages(lang, '&action=query&generator=random&grnnamespace=0&grnlimit=20');
 }
 
-export function fetchByCategory(category: string, lang = 'hr'): Promise<WikiArticle[]> {
-  return queryPages(
-    lang,
-    `&action=query&generator=categorymembers&gcmtitle=${encodeURIComponent(category)}&gcmlimit=20&gcmtype=page`,
-  );
+export interface CategoryResult {
+  articles: WikiArticle[];
+  continueToken: string | null;
+}
+
+export async function fetchByCategory(
+  category: string,
+  lang = 'hr',
+  continueToken?: string | null,
+): Promise<CategoryResult> {
+  let params = `&action=query&generator=categorymembers&gcmtitle=${encodeURIComponent(category)}&gcmlimit=20&gcmtype=page`;
+  if (continueToken) {
+    params += `&gcmcontinue=${encodeURIComponent(continueToken)}`;
+  }
+  const url = actionBase(lang) + params + PROPS;
+  const res = await fetchWithTimeout(url);
+  if (!res.ok) throw new Error(`Wikipedia API error: ${res.status}`);
+  const data: WikiApiResponse = await res.json();
+  const articles = processPages(data?.query?.pages ?? {}, lang);
+  const nextToken =
+    data?.continue?.gcmcontinue ??
+    data?.['query-continue']?.categorymembers?.gcmcontinue ??
+    null;
+  return { articles, continueToken: nextToken };
 }
 
 export async function searchArticles(query: string, lang = 'hr'): Promise<WikiArticle[]> {
