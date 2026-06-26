@@ -272,9 +272,13 @@ export default function DiscoverScreen() {
           onEndReachedThreshold={4}
           ListFooterComponent={renderFooter}
           style={{ height: H }}
-          windowSize={3}
-          initialNumToRender={2}
-          maxToRenderPerBatch={3}
+          // Keep more full-screen cards mounted around the viewport so the next
+          // card (and its image) is always pre-rendered before you page to it —
+          // windowSize=3 only mounted ~1 card ahead, causing blank cells + no
+          // image request on fast scroll.
+          windowSize={5}
+          initialNumToRender={3}
+          maxToRenderPerBatch={4}
           getItemLayout={(_, index) => ({ length: H, offset: H * index, index })}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig.current}
