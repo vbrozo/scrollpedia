@@ -33,12 +33,14 @@ function AppTabs() {
   const t = getStrings(lang);
   const insets = useSafeAreaInsets();
 
-  // Push the tab row lower into the safe-area zone: the bar extends to the
-  // physical bottom, with only a small clearance below the icons so they sit
-  // close to the edge (instead of floating above the home-indicator area).
-  const bottomPad = Math.max(insets.bottom - 12, 6);
+  // Tab bar sits at the physical bottom (see #root in +html.tsx). On web the
+  // safe-area insets read 0, so we reserve a fixed clearance below the icons so
+  // they clear the home indicator while still sitting low. On native we use the
+  // measured inset.
+  const isWeb = Platform.OS === 'web';
+  const bottomPad = isWeb ? 18 : Math.max(insets.bottom, 8);
   const dynamicTabBar = {
-    height: 52 + bottomPad,
+    height: 46 + bottomPad,
     paddingBottom: bottomPad,
     paddingTop: 8,
   };

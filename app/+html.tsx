@@ -73,8 +73,12 @@ export default function Root({ children }: PropsWithChildren) {
             background: #0d1128;
             overscroll-behavior: none;
           }
-          /* Use dynamic viewport height so mobile browser chrome doesn't cut content */
+          /* Fill the entire viewport edge-to-edge (incl. bottom safe-area) so the
+             tab bar reaches the physical bottom instead of floating above the
+             home-indicator zone. */
           #root {
+            position: fixed;
+            inset: 0;
             height: 100dvh;
           }
           * {

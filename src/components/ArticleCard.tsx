@@ -97,9 +97,9 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
   const minutes = readingMinutes(article.extract);
 
   const topPad = insets.top + FEED_SELECTOR_H + 8;
-  // Mirror the tab bar height from _layout.tsx (52 + bottomPad) so the action
+  // Mirror the tab bar height from _layout.tsx (46 + bottomPad) so the action
   // buttons sit just above it without a gap or overlap.
-  const tabBarH = isWeb ? 52 + Math.max(insets.bottom - 12, 6) : Platform.OS === 'ios' ? 85 : 65;
+  const tabBarH = isWeb ? 46 + 18 : Platform.OS === 'ios' ? 46 + Math.max(insets.bottom, 8) : 65;
   const botPad = isWeb ? tabBarH + 8 : Platform.OS === 'ios' ? 95 : 75;
   const ACTION_H = 56; // height of action buttons row
 
