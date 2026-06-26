@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Platform,
   StyleSheet,
@@ -48,6 +47,10 @@ export default function DiscoverScreen() {
   const currentIndexRef = useRef(0);
   const feedLengthRef = useRef(0);
   const previousLangRef = useRef(lang);
+  // Stable ref so onViewableItemsChanged (which can't change after mount) can
+  // always call the latest loadMore without being in its dependency list.
+  const loadMoreRef = useRef(loadMore);
+  useEffect(() => { loadMoreRef.current = loadMore; }, [loadMore]);
 
   useEffect(() => {
     if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
@@ -138,9 +141,15 @@ export default function DiscoverScreen() {
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
-      currentIndexRef.current = viewableItems[0].index ?? 0;
+      const idx = viewableItems[0].index ?? 0;
+      currentIndexRef.current = idx;
+      // Proactively pre-fetch when within 5 cards of the end so the next batch
+      // arrives before the user hits the loading footer.
+      if (feedLengthRef.current - idx <= 5) {
+        loadMoreRef.current();
+      }
     }
-  }, []);
+  }, []); // stable — loadMore is accessed via ref
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
 
@@ -165,6 +174,14 @@ export default function DiscoverScreen() {
   useEffect(() => {
     feedLengthRef.current = feedData.length;
   }, [feedData.length]);
+
+  // Pre-warm: after the first batch lands, immediately load a second one so
+  // the feed has a deep buffer (≥20 articles) before the user reaches the end.
+  useEffect(() => {
+    if (!category && articles.length > 0 && articles.length < 15 && hasMore) {
+      loadMoreRef.current();
+    }
+  }, [articles.length, hasMore, category]);
 
   // Show skeletons whenever the feed has no content yet and there's no error —
   // not just while `loading` is true. This avoids a black gap between the React
@@ -197,11 +214,7 @@ export default function DiscoverScreen() {
       );
     }
     if (loading) {
-      return (
-        <View style={[styles.loader, { height: H }]}>
-          <ActivityIndicator color="#fff" size="large" />
-        </View>
-      );
+      return <SkeletonCard />;
     }
     if (!hasMore) {
       return (
@@ -256,7 +269,7 @@ export default function DiscoverScreen() {
           decelerationRate="fast"
           showsVerticalScrollIndicator={false}
           onEndReached={hasMore ? loadMore : undefined}
-          onEndReachedThreshold={2}
+          onEndReachedThreshold={4}
           ListFooterComponent={renderFooter}
           style={{ height: H }}
           windowSize={3}

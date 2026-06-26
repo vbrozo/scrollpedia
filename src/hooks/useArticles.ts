@@ -27,22 +27,24 @@ export function useArticles(category: string | null = null, lang = 'hr') {
           setHasMore(false);
         }
       } else {
-        // Fire 3 random-article requests in parallel, then deduplicate against
-        // already-seen IDs. Parallel fetch is faster than sequential, and 3
-        // requests (up to 60 candidates) gives enough headroom even for long
-        // sessions. If every candidate has been seen we surface an error so the
-        // retry button appears instead of leaving the feed silently frozen.
+        // Fire batches of 3 parallel requests until we have at least MIN_NEW
+        // new articles. This guarantees a meaningful scroll buffer on every
+        // loadMore and prevents the feed appearing stuck after a fast scroll.
+        const MIN_NEW = 10;
+        const MAX_ROUNDS = 3;
         const PARALLEL = 3;
-        const results = await Promise.allSettled(
-          Array.from({ length: PARALLEL }, () => fetchRandomArticles(lang))
-        );
         const collected: WikiArticle[] = [];
-        for (const r of results) {
-          if (r.status !== 'fulfilled') continue;
-          for (const a of r.value) {
-            if (!seenIds.current.has(a.pageid)) {
-              seenIds.current.add(a.pageid);
-              collected.push(a);
+        for (let round = 0; round < MAX_ROUNDS && collected.length < MIN_NEW; round++) {
+          const results = await Promise.allSettled(
+            Array.from({ length: PARALLEL }, () => fetchRandomArticles(lang))
+          );
+          for (const r of results) {
+            if (r.status !== 'fulfilled') continue;
+            for (const a of r.value) {
+              if (!seenIds.current.has(a.pageid)) {
+                seenIds.current.add(a.pageid);
+                collected.push(a);
+              }
             }
           }
         }
