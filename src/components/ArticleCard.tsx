@@ -97,9 +97,8 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
   const minutes = readingMinutes(article.extract);
 
   const topPad = insets.top + FEED_SELECTOR_H + 8;
-  // Buttons sit flush above the tab bar: safe-area bottom + visible tab bar content (~58px)
-  const botPad = isWeb ? 80 : insets.bottom + 58;
-  const ACTION_H = 56;
+  // Tab bar height defined in _layout.tsx
+  const tabBarH = Platform.OS === 'ios' ? 85 : 65;
 
   // Story indicator: up to MAX_DOTS, current index highlighted
   const dotCount = Math.max(1, Math.min(total || 1, MAX_DOTS));
@@ -131,8 +130,8 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
         })}
       </View>
 
-      {/* Main content column — flows top-down, buttons pinned to bottom */}
-      <View style={[styles.content, { paddingTop: topPad, paddingBottom: botPad + ACTION_H + 12 }]}>
+      {/* Full-height flex column: topPad spacer → hero → content (flex:1) → actions → tabBar spacer */}
+      <View style={[styles.column, { paddingTop: topPad }]}>
 
         {/* Hero image */}
         <View style={styles.heroWrap}>
@@ -142,7 +141,6 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
             height={HERO_H}
             fallbackColors={['#141b34', '#1e2550', '#141b34']}
           />
-          {/* Bottom fade */}
           <LinearGradient
             colors={['transparent', 'rgba(13,17,40,0.85)']}
             style={styles.heroFade}
@@ -150,91 +148,83 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
           />
         </View>
 
-        {/* Meta row */}
-        <View style={styles.metaRow}>
-          {/* Wikipedia chip */}
-          {isWeb ? (
-            // @ts-ignore web only
-            <div dangerouslySetInnerHTML={{ __html: `<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;background:linear-gradient(135deg,rgba(94,127,255,0.14),rgba(164,94,255,0.14));border:1px solid rgba(164,94,255,0.28);"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="url(#wg)" stroke-width="1.2"/><defs><linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7a94ff"/><stop offset="100%" stop-color="#c06bff"/></linearGradient></defs></svg><span style="font:600 11px/1 Sora,sans-serif;background:linear-gradient(135deg,#7a94ff,#c06bff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Wikipedia</span></div>` }} />
-          ) : (
-            <View style={styles.wikiChip}>
-              <Text style={[styles.wikiChipText, { fontFamily: SORA }]}>Wikipedia</Text>
+        {/* Scrollable middle: meta + title + tags + excerpt + read more */}
+        <View style={styles.middle}>
+          {/* Meta row */}
+          <View style={styles.metaRow}>
+            {isWeb ? (
+              // @ts-ignore web only
+              <div dangerouslySetInnerHTML={{ __html: `<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;background:linear-gradient(135deg,rgba(94,127,255,0.14),rgba(164,94,255,0.14));border:1px solid rgba(164,94,255,0.28);"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="url(#wg)" stroke-width="1.2"/><defs><linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7a94ff"/><stop offset="100%" stop-color="#c06bff"/></linearGradient></defs></svg><span style="font:600 11px/1 Sora,sans-serif;background:linear-gradient(135deg,#7a94ff,#c06bff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Wikipedia</span></div>` }} />
+            ) : (
+              <View style={styles.wikiChip}>
+                <Text style={[styles.wikiChipText, { fontFamily: SORA }]}>Wikipedia</Text>
+              </View>
+            )}
+            <Text style={[styles.readTime, { fontFamily: SORA }]}>{t.readingTime(minutes)}</Text>
+          </View>
+
+          {/* Title */}
+          <Text style={[styles.title, { fontFamily: SORA, fontSize: 32 * fontScale, lineHeight: 38 * fontScale }]} numberOfLines={3}>
+            {article.title}
+          </Text>
+
+          {/* Tags — max 2, single line */}
+          {article.topics && article.topics.length > 0 && (
+            <View style={styles.tagRow}>
+              {article.topics.slice(0, 2).map((chip) => (
+                <TouchableOpacity key={chip.raw} onPress={() => onTopicSelect?.(chip.raw)} style={styles.tag} activeOpacity={0.7}>
+                  <Text style={[styles.tagText, { fontFamily: SORA }]} numberOfLines={1} ellipsizeMode="tail">{chip.display}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           )}
-          <Text style={[styles.readTime, { fontFamily: SORA }]}>
-            {t.readingTime(minutes)}
-          </Text>
-        </View>
 
-        {/* Title */}
-        <Text style={[styles.title, { fontFamily: SORA, fontSize: 32 * fontScale, lineHeight: 38 * fontScale }]} numberOfLines={3}>
-          {article.title}
-        </Text>
+          {/* Excerpt */}
+          {truncated ? (
+            <Text style={[styles.extract, { fontFamily: SORA, fontSize: 14 * fontScale, lineHeight: 22 * fontScale }]} numberOfLines={3}>
+              {truncated}
+            </Text>
+          ) : null}
 
-        {/* Tags — max 2, single line */}
-        {article.topics && article.topics.length > 0 && (
-          <View style={styles.tagRow}>
-            {article.topics.slice(0, 2).map((chip) => (
-              <TouchableOpacity
-                key={chip.raw}
-                onPress={() => onTopicSelect?.(chip.raw)}
-                style={styles.tag}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tagText, { fontFamily: SORA }]} numberOfLines={1} ellipsizeMode="tail">
-                  {chip.display}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Excerpt */}
-        {truncated ? (
-          <Text style={[styles.extract, { fontFamily: SORA, fontSize: 14 * fontScale, lineHeight: 22 * fontScale }]} numberOfLines={3}>
-            {truncated}
-          </Text>
-        ) : null}
-
-        {/* Read more */}
-        <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
-          {isWeb ? (
-            // @ts-ignore
-            <span style={{ font: `600 13px/1 ${SORA},sans-serif`, backgroundImage: 'linear-gradient(135deg,#7a94ff,#c06bff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              {t.readMore} →
-            </span>
-          ) : (
-            <Text style={[styles.readMoreText, { fontFamily: SORA }]}>{t.readMore} →</Text>
-          )}
-        </TouchableOpacity>
-
-      </View>
-
-      {/* Actions — pinned to bottom above tab bar */}
-      <View style={[styles.actions, { bottom: botPad, paddingHorizontal: 18 }]}>
-        <NeutralAction
-          icon="bookmark"
-          label={saved ? t.saved : t.save}
-          onPress={() => toggle(article)}
-          active={saved}
-        />
-        <NeutralAction
-          icon="share"
-          label={t.share}
-          onPress={() => Share.share({ title: article.title, url: article.fullurl, message: article.fullurl })}
-        />
-        {/* Primary: Otvori */}
-        <TouchableOpacity onPress={() => Linking.openURL(article.fullurl)} style={styles.primaryBtn} activeOpacity={0.85}>
-          <LinearGradient colors={[GRAD_START, GRAD_END]} style={styles.primaryBtnInner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          {/* Read more */}
+          <TouchableOpacity onPress={onReadMore} style={styles.readMoreBtn} activeOpacity={0.7}>
             {isWeb ? (
               // @ts-ignore
-              <div dangerouslySetInnerHTML={{ __html: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` }} />
+              <span style={{ font: `600 13px/1 ${SORA},sans-serif`, backgroundImage: 'linear-gradient(135deg,#7a94ff,#c06bff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                {t.readMore} →
+              </span>
             ) : (
-              <Text style={{ color: '#fff', fontSize: 18 }}>↗</Text>
+              <Text style={[styles.readMoreText, { fontFamily: SORA }]}>{t.readMore} →</Text>
             )}
-            <Text style={[styles.primaryBtnLabel, { fontFamily: SORA }]}>{t.open}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+
+        {/* Actions — immediately below content, no gap */}
+        <View style={[styles.actions, { paddingBottom: tabBarH }]}>
+          <NeutralAction
+            icon="bookmark"
+            label={saved ? t.saved : t.save}
+            onPress={() => toggle(article)}
+            active={saved}
+          />
+          <NeutralAction
+            icon="share"
+            label={t.share}
+            onPress={() => Share.share({ title: article.title, url: article.fullurl, message: article.fullurl })}
+          />
+          <TouchableOpacity onPress={() => Linking.openURL(article.fullurl)} style={styles.primaryBtn} activeOpacity={0.85}>
+            <LinearGradient colors={[GRAD_START, GRAD_END]} style={styles.primaryBtnInner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              {isWeb ? (
+                // @ts-ignore
+                <div dangerouslySetInnerHTML={{ __html: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>` }} />
+              ) : (
+                <Text style={{ color: '#fff', fontSize: 18 }}>↗</Text>
+              )}
+              <Text style={[styles.primaryBtnLabel, { fontFamily: SORA }]}>{t.open}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
       </View>
 
       {!isWeb && (
@@ -272,16 +262,23 @@ function NeutralAction({ icon, label, onPress, active }: { icon: 'bookmark' | 's
 const styles = StyleSheet.create({
   card: { backgroundColor: '#0d1128', overflow: 'hidden' },
 
-  content: {
+  // Full-height flex column that fills the card
+  column: {
     flex: 1,
     paddingHorizontal: 18,
+  },
+
+  // Middle section grows to fill remaining space
+  middle: {
+    flex: 1,
+    paddingTop: 16,
+    overflow: 'hidden',
   },
 
   heroWrap: {
     height: HERO_H,
     borderRadius: 22,
     overflow: 'hidden',
-    marginBottom: 16,
   },
   heroFade: {
     position: 'absolute',
@@ -348,11 +345,9 @@ const styles = StyleSheet.create({
   },
 
   actions: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     gap: 10,
+    paddingTop: 10,
   },
   neutralBtn: {
     flex: 1,
