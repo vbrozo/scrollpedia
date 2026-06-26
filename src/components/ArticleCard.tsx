@@ -97,9 +97,10 @@ function ArticleCard({ article, index = 0, total = 0, width: W, height: H, onSki
   const minutes = readingMinutes(article.extract);
 
   const topPad = insets.top + FEED_SELECTOR_H + 8;
-  // Buttons sit flush above the tab bar (web tab bar ≈ 65px, no extra safe-area).
-  // Adding insets.bottom here previously created a black gap, so we don't.
-  const botPad = isWeb ? 64 : Platform.OS === 'ios' ? 95 : 75;
+  // Mirror the tab bar height from _layout.tsx (52 + bottomPad) so the action
+  // buttons sit just above it without a gap or overlap.
+  const tabBarH = isWeb ? 52 + Math.max(insets.bottom - 12, 6) : Platform.OS === 'ios' ? 85 : 65;
+  const botPad = isWeb ? tabBarH + 8 : Platform.OS === 'ios' ? 95 : 75;
   const ACTION_H = 56; // height of action buttons row
 
   // Story indicator: up to MAX_DOTS, current index highlighted

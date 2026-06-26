@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { LanguageProvider, useLanguage } from '../src/context/LanguageContext';
 import { SavedProvider } from '../src/context/SavedContext';
@@ -31,12 +31,23 @@ export default function RootLayout() {
 function AppTabs() {
   const { lang } = useLanguage();
   const t = getStrings(lang);
+  const insets = useSafeAreaInsets();
+
+  // Push the tab row lower into the safe-area zone: the bar extends to the
+  // physical bottom, with only a small clearance below the icons so they sit
+  // close to the edge (instead of floating above the home-indicator area).
+  const bottomPad = Math.max(insets.bottom - 12, 6);
+  const dynamicTabBar = {
+    height: 52 + bottomPad,
+    paddingBottom: bottomPad,
+    paddingTop: 8,
+  };
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, dynamicTabBar],
         tabBarActiveTintColor: '#8e9bff',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.3)',
         tabBarLabelStyle: styles.tabLabel,
