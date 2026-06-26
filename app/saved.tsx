@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getArticleKey } from '../src/utils/storage';
 import SavedCard from '../src/components/SavedCard';
 import { WikiArticle } from '../src/types';
@@ -47,6 +48,11 @@ export default function SavedScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bg, paddingTop: Math.max(styles.container.paddingTop, insets.top + 12) }]}>
       <Text style={[styles.header, { fontFamily: SORA }]}>{t.savedHeader}</Text>
+      {/* Count badge with accent dash */}
+      <View style={styles.countRow}>
+        <LinearGradient colors={['#5e7fff', '#a45eff']} style={styles.countDash} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+        <Text style={[styles.countText, { fontFamily: SORA }]}>{articles.length} {t.savedHeader?.toLowerCase?.() === 'saved' ? 'articles' : 'članaka'}</Text>
+      </View>
       <FlatList
         data={articles}
         keyExtractor={getArticleKey}
@@ -75,6 +81,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   list: { paddingBottom: 100, paddingTop: 4 },
+  countRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 16 },
+  countDash: { width: 22, height: 3, borderRadius: 2 },
+  countText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '600' },
   empty: {
     flex: 1,
     backgroundColor: '#0d1128',

@@ -124,7 +124,7 @@ export default function SearchScreen() {
         keyExtractor={(item) => String(item.pageid)}
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => setModalArticle(item)} activeOpacity={0.85}>
-            <SavedCard article={item} onRemove={handleRemove} />
+            <SavedCard article={item} onRemove={handleRemove} saveMode />
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.list}

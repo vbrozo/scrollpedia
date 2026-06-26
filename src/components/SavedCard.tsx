@@ -1,38 +1,71 @@
 import React from 'react';
-import { Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Linking, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WikiArticle } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { getStrings } from '../utils/i18n';
+import { FONT_SORA } from '../utils/fonts';
 
 interface Props {
   article: WikiArticle;
   onRemove: (article: WikiArticle) => void;
+  /** When true, shows "Spremi" bookmark instead of "Ukloni" trash — used in Search results */
+  saveMode?: boolean;
+  onSave?: (article: WikiArticle) => void;
 }
 
-export default function SavedCard({ article, onRemove }: Props) {
+const isWeb = Platform.OS === 'web';
+const SORA = FONT_SORA;
+
+const TRASH_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const BOOKMARK_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 4h12v17l-6-4-6 4V4z" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+
+export default function SavedCard({ article, onRemove, saveMode, onSave }: Props) {
   const { lang } = useLanguage();
   const t = getStrings(lang);
 
   return (
     <View style={styles.card}>
+      {/* Thumbnail */}
       {article.thumbnail ? (
         <Image source={{ uri: article.thumbnail.source }} style={styles.thumb} resizeMode="cover" />
       ) : (
-        <LinearGradient colors={['#1a1a2e', '#0f3460']} style={styles.thumb} />
+        <LinearGradient colors={['#141b34', '#1e2550']} style={styles.thumb} />
       )}
+
       <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={2}>{article.title}</Text>
-        <Text style={styles.extract} numberOfLines={2}>
-          {article.extract.slice(0, 120)}…
+        <Text style={[styles.title, { fontFamily: SORA }]} numberOfLines={2}>{article.title}</Text>
+        <Text style={[styles.extract, { fontFamily: SORA }]} numberOfLines={2}>
+          {article.extract.slice(0, 120)}
         </Text>
         <View style={styles.row}>
-          <TouchableOpacity onPress={() => Linking.openURL(article.fullurl)} style={styles.pill}>
-            <Text style={styles.pillText}>{t.open}</Text>
+          {/* Primary: Otvori */}
+          <TouchableOpacity onPress={() => Linking.openURL(article.fullurl)} activeOpacity={0.85} style={styles.openBtnWrap}>
+            <LinearGradient colors={['#5e7fff', '#a45eff']} style={styles.openBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <Text style={[styles.openBtnText, { fontFamily: SORA }]}>{t.open}</Text>
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => onRemove(article)} style={[styles.pill, styles.pillDanger]}>
-            <Text style={[styles.pillText, styles.pillTextDanger]}>{t.remove}</Text>
-          </TouchableOpacity>
+
+          {/* Secondary: Ukloni / Spremi */}
+          {saveMode ? (
+            <TouchableOpacity onPress={() => onSave?.(article)} style={styles.secondaryBtn} activeOpacity={0.75}>
+              {isWeb ? (
+                // @ts-ignore
+                <div dangerouslySetInnerHTML={{ __html: BOOKMARK_SVG }} />
+              ) : (
+                <Text style={styles.secondaryBtnText}>🔖</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => onRemove(article)} style={styles.secondaryBtn} activeOpacity={0.75}>
+              {isWeb ? (
+                // @ts-ignore
+                <div dangerouslySetInnerHTML={{ __html: TRASH_SVG }} />
+              ) : (
+                <Text style={styles.secondaryBtnText}>🗑️</Text>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -42,21 +75,21 @@ export default function SavedCard({ article, onRemove }: Props) {
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    backgroundColor: '#161616',
+    backgroundColor: '#141b34',
     borderRadius: 16,
     marginHorizontal: 16,
-    marginVertical: 7,
+    marginVertical: 6,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#252525',
+    borderColor: 'rgba(255,255,255,0.07)',
   },
   thumb: {
-    width: 100,
-    height: 110,
+    width: 62,
+    height: 82,
   },
   info: {
     flex: 1,
-    padding: 12,
+    padding: 13,
     justifyContent: 'space-between',
   },
   title: {
@@ -73,27 +106,32 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginTop: 8,
   },
-  pill: {
-    paddingHorizontal: 14,
+  openBtnWrap: { borderRadius: 18, overflow: 'hidden' },
+  openBtn: {
+    paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 18,
   },
-  pillDanger: {
-    backgroundColor: 'rgba(255,60,60,0.08)',
-    borderColor: 'rgba(255,60,60,0.2)',
-  },
-  pillText: {
+  openBtnText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
   },
-  pillTextDanger: {
-    color: '#ff6060',
+  secondaryBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  secondaryBtnText: {
+    fontSize: 14,
   },
 });

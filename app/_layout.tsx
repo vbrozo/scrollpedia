@@ -37,7 +37,7 @@ function AppTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#5e7fff',
+        tabBarActiveTintColor: '#8e9bff',
         tabBarInactiveTintColor: 'rgba(255,255,255,0.3)',
         tabBarLabelStyle: styles.tabLabel,
       }}
@@ -78,7 +78,7 @@ const SVG_ICONS: Record<string, (active: string, mid: string, inactive: string, 
   globe: (a, m, i, f) => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="${f ? a : i}" stroke-width="1.5"/><path d="M12 3Q15.5 7.5 15.5 12Q15.5 16.5 12 21" stroke="${f ? m : i}" stroke-width="1.5" fill="none"/><path d="M12 3Q8.5 7.5 8.5 12Q8.5 16.5 12 21" stroke="${f ? m : i}" stroke-width="1.5" fill="none"/><line x1="3.5" y1="9" x2="20.5" y2="9" stroke="${f ? a : i}" stroke-width="1.2"/><line x1="3.5" y1="15" x2="20.5" y2="15" stroke="${f ? a : i}" stroke-width="1.2"/></svg>`,
   search: (a, m, i, f) => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="7" stroke="${f ? a : i}" stroke-width="1.5"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="${f ? m : i}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   bookmark: (a, m, i, f) => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h14v16l-7-4-7 4V4z" stroke="${f ? a : i}" stroke-width="1.5" stroke-linejoin="round"/><line x1="8" y1="9" x2="16" y2="9" stroke="${f ? m : i}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  gear: (a, m, i, f) => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3" stroke="${f ? m : i}" stroke-width="1.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M16.95 7.05l-1.41 1.41M7.05 16.95l-1.41 1.41" stroke="${f ? a : i}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  gear: (a, m, i, f) => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="3.5" stroke="${f ? m : i}" stroke-width="1.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M19.07 4.93l-1.77 1.77M6.7 17.3l-1.77 1.77" stroke="${f ? a : i}" stroke-width="1.5" stroke-linecap="round"/></svg>`,
 };
 
 function TabIcon({ svg, focused }: { svg: string; focused: boolean }) {
