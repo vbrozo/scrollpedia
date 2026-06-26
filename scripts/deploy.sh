@@ -15,6 +15,7 @@ echo "→ Staging docs/ for GitHub Pages…"
 cp -r dist docs
 cp public/manifest.json public/sw.js docs/
 cp -r public/icons docs/
+cp _config.yml docs/          # force Jekyll to keep _expo/ if it runs
 touch docs/.nojekyll
 cp docs/index.html docs/404.html   # SPA fallback for client-side routes
 

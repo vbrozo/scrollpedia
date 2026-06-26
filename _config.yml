@@ -1,0 +1,5 @@
+# GitHub Pages serves /docs. If it runs Jekyll (despite .nojekyll), Jekyll
+# drops directories starting with "_" — which deletes Expo's _expo/ bundle
+# output and causes a 404 on the JS bundle (blank app). Force-include it.
+include:
+  - "_expo"
