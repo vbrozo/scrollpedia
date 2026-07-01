@@ -49,6 +49,20 @@ export default function SettingsScreen() {
       <Text style={styles.header}>{t.settingsHeader}</Text>
 
       <View style={styles.section}>
+        <TouchableOpacity
+          style={styles.coffeeBtn}
+          onPress={() => Linking.openURL('https://buymeacoffee.com/vbrozou')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.clearBtnEmoji}>☕</Text>
+          <View style={styles.clearBtnInfo}>
+            <Text style={styles.coffeeBtnTitle}>{t.buyMeCoffee}</Text>
+            <Text style={styles.coffeeBtnSub}>{t.buyMeCoffeeSubtitle}</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionLabel}>{t.displaySection}</Text>
         <View style={styles.fontRow}>
           {FONT_OPTIONS.map((o) => {
@@ -153,21 +167,6 @@ export default function SettingsScreen() {
             <Text style={styles.clearBtnSub}>
               {t.clearCacheSubtitle}
             </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t.supportSection}</Text>
-        <TouchableOpacity
-          style={styles.clearBtn}
-          onPress={() => Linking.openURL('https://buymeacoffee.com/vbrozou')}
-          activeOpacity={0.75}
-        >
-          <Text style={styles.clearBtnEmoji}>☕</Text>
-          <View style={styles.clearBtnInfo}>
-            <Text style={styles.clearBtnTitle}>{t.buyMeCoffee}</Text>
-            <Text style={styles.clearBtnSub}>{t.buyMeCoffeeSubtitle}</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -404,6 +403,29 @@ const styles = StyleSheet.create({
   },
   clearBtnSub: {
     color: 'rgba(255,255,255,0.3)',
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 17,
+  },
+  coffeeBtn: {
+    marginHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: '#fff6df',
+    borderWidth: 1,
+    borderColor: '#ffd76a',
+  },
+  coffeeBtnTitle: {
+    color: '#4a3200',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  coffeeBtnSub: {
+    color: '#8a6a1f',
     fontSize: 12,
     marginTop: 2,
     lineHeight: 17,
