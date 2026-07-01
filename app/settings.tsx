@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Linking,
   Platform,
@@ -9,7 +9,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { LANGUAGES, useLanguage } from '../src/context/LanguageContext';
 import { FONT_OPTIONS, useTheme } from '../src/context/ThemeContext';
@@ -23,26 +22,6 @@ export default function SettingsScreen() {
   const { fontScale, amoled, bg, setFontScale, setAmoled } = useTheme();
   const insets = useSafeAreaInsets();
   const t = getStrings(lang);
-  const [clearing, setClearing] = useState(false);
-  const [cleared, setCleared] = useState(false);
-
-  async function handleClearCache() {
-    setClearing(true);
-    setCleared(false);
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-      const cacheKeys = keys.filter((k) =>
-        k.startsWith('scrollpedia_daily_highlight') ||
-        k.startsWith('scrollpedia_onthisday') ||
-        k === 'scrollpedia_onboarding_done'
-      );
-      await AsyncStorage.multiRemove(cacheKeys);
-      setCleared(true);
-      setTimeout(() => setCleared(false), 2500);
-    } finally {
-      setClearing(false);
-    }
-  }
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: bg }]} contentContainerStyle={[styles.content, { paddingTop: Math.max(styles.content.paddingTop, insets.top + 12) }]}>
@@ -149,26 +128,6 @@ export default function SettingsScreen() {
         <Text style={styles.hint}>
           {t.languageHint}
         </Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>{t.developmentOptions}</Text>
-        <TouchableOpacity
-          style={[styles.clearBtn, cleared && styles.clearBtnDone]}
-          onPress={handleClearCache}
-          activeOpacity={0.75}
-          disabled={clearing}
-        >
-          <Text style={styles.clearBtnEmoji}>{cleared ? '✓' : '🗑️'}</Text>
-          <View style={styles.clearBtnInfo}>
-            <Text style={[styles.clearBtnTitle, cleared && styles.clearBtnTitleDone]}>
-              {cleared ? t.cacheCleared : clearing ? t.clearing : t.clearCache}
-            </Text>
-            <Text style={styles.clearBtnSub}>
-              {t.clearCacheSubtitle}
-            </Text>
-          </View>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -369,22 +328,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  clearBtn: {
-    marginHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgb(20,27,52)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
-  },
-  clearBtnDone: {
-    backgroundColor: '#0d1f0d',
-    borderColor: '#1e3a1e',
-  },
   clearBtnEmoji: {
     fontSize: 22,
     width: 30,
@@ -397,9 +340,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     fontSize: 15,
     fontWeight: '600',
-  },
-  clearBtnTitleDone: {
-    color: '#4caf50',
   },
   clearBtnSub: {
     color: 'rgba(255,255,255,0.3)',
