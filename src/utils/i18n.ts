@@ -55,6 +55,9 @@ export const STRINGS = {
     amoledHint: 'Čisto crna pozadina — štedi bateriju na OLED zaslonima.',
     forYou: 'Za tebe',
     explore: 'Istraži',
+    supportSection: 'PODRŠKA',
+    buyMeCoffee: 'Počasti me kavom',
+    buyMeCoffeeSubtitle: 'Ako ti se sviđa aplikacija, podrži daljnji razvoj.',
   },
   en: {
     all: 'All',
@@ -112,6 +115,9 @@ export const STRINGS = {
     amoledHint: 'Pure black background — saves battery on OLED screens.',
     forYou: 'For You',
     explore: 'Explore',
+    supportSection: 'SUPPORT',
+    buyMeCoffee: 'Buy me a coffee',
+    buyMeCoffeeSubtitle: 'If you enjoy the app, support its development.',
   },
   de: {
     all: 'Alle',
@@ -169,6 +175,9 @@ export const STRINGS = {
     amoledHint: 'Reines Schwarz — spart Akku auf OLED-Bildschirmen.',
     forYou: 'Für dich',
     explore: 'Entdecken',
+    supportSection: 'UNTERSTÜTZUNG',
+    buyMeCoffee: 'Spendiere mir einen Kaffee',
+    buyMeCoffeeSubtitle: 'Wenn dir die App gefällt, unterstütze die Weiterentwicklung.',
   },
   fr: {
     all: 'Tous',
@@ -226,6 +235,9 @@ export const STRINGS = {
     amoledHint: 'Fond noir pur — économise la batterie sur les écrans OLED.',
     forYou: 'Pour toi',
     explore: 'Explorer',
+    supportSection: 'SOUTIEN',
+    buyMeCoffee: 'Offrez-moi un café',
+    buyMeCoffeeSubtitle: "Si vous aimez l'application, soutenez son développement.",
   },
   es: {
     all: 'Todo',
@@ -283,6 +295,9 @@ export const STRINGS = {
     amoledHint: 'Fondo negro puro: ahorra batería en pantallas OLED.',
     forYou: 'Para ti',
     explore: 'Explorar',
+    supportSection: 'APOYO',
+    buyMeCoffee: 'Invítame a un café',
+    buyMeCoffeeSubtitle: 'Si te gusta la app, apoya su desarrollo.',
   },
   it: {
     all: 'Tutti',
@@ -340,6 +355,9 @@ export const STRINGS = {
     amoledHint: 'Sfondo nero puro: risparmia batteria su schermi OLED.',
     forYou: 'Per te',
     explore: 'Esplora',
+    supportSection: 'SUPPORTO',
+    buyMeCoffee: 'Offrimi un caffè',
+    buyMeCoffeeSubtitle: "Se ti piace l'app, sostieni il suo sviluppo.",
   },
 };
 
